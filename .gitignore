@@ -1,0 +1,4 @@
+/cbuild
+/.vscode
+/.clang-format
+/example/emcc
