@@ -9,26 +9,32 @@
 using byte = uint8_t;
 using byte_vec = std::vector<byte>;
 
-class byte_IO{
+class byte_IO {
 public:
-    byte_IO(byte_vec _data):data{_data}{}
+    byte_IO(byte_vec _data) : data{_data} {
+    }
 
-    byte_vec read(uint32_t size){
+    byte_vec read(uint32_t size) {
         byte_vec res{};
-        ASSERT(size<data.size(),"byte_IO read overflow");
-        while(size--){
+        ASSERT(size <= data.size(), "byte_IO read overflow");
+        while (size--) {
             res.push_back(data[0]);
             data.erase(data.begin());
         }
         return res;
     }
-    byte read_one(){
-        ASSERT(!data.empty(),"byte_IO empty");
+    byte read_one() {
+        ASSERT(!data.empty(), "byte_IO empty");
         byte f = data[0];
         data.erase(data.begin());
         return f;
     }
-
+    bool empty() {
+        return data.empty();
+    }
+    std::size_t size() {
+        return data.size();
+    }
 
     byte_vec data;
 };
@@ -231,8 +237,6 @@ static const byte f32_reinterpret_i32 = 0xbe;
 static const byte f64_reinterpret_i64 = 0xbf;
 
 }  // namespace instruction
-
-
 
 // case instruction::unreachable:
 // case instruction::nop:
