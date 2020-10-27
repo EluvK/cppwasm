@@ -107,6 +107,12 @@ public:
     static ValueType GetValueType(byte_IO & BinaryIO) {
         return ValueType(BinaryIO.read_one());
     }
+    bool operator==(ValueType const & other) const noexcept {
+        return data == other.data;
+    }
+    bool operator!=(ValueType const & other) const noexcept {
+        return !(*this == other);
+    }
 
     byte data;
 };
@@ -191,11 +197,11 @@ public:
 
     static MemoryType GetMemoryType(byte_IO & BinaryIO) {
         MemoryType res{};
-        res.data = Limits::GetLimits(BinaryIO);
+        res.limits = Limits::GetLimits(BinaryIO);
         return res;
     }
 
-    Limits data{};
+    Limits limits{};
 };
 
 /**
@@ -234,12 +240,12 @@ public:
     static TableType GetTableType(byte_IO & BinaryIO) {
         TableType res{};
         res.element_type = ElementType::GetElementType(BinaryIO);
-        res.limit = Limits::GetLimits(BinaryIO);
+        res.limits = Limits::GetLimits(BinaryIO);
         return res;
     }
 
     ElementType element_type;
-    Limits limit;
+    Limits limits;
 };
 
 /**
