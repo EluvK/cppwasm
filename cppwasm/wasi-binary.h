@@ -1,7 +1,9 @@
 #pragma once
 #include "base/wasi-define.h"
+#include "base/Variant.h"
 #include "wasi-leb128.h"
 
+#include <fstream>
 /**
  * ======================================================================================================================
  * Binary Format Index
@@ -1121,6 +1123,36 @@ public:
 
 class Module {
 public:
+    Module(const char * file_path) {
+        unsigned char * bytes;
+        uint32_t bytes_size;
+
+        std::ifstream file_size(file_path, std::ifstream::ate | std::ifstream::binary);
+        bytes_size = file_size.tellg();
+        file_size.close();
+
+        byte_vec data{};
+        data.reserve(bytes_size);
+
+        ASSERT(bytes_size > 0, "wrong file.");
+
+        std::ifstream in(file_path, std::ifstream::binary);
+        bytes = (uint8_t *)malloc(bytes_size);
+        in.read(reinterpret_cast<char *>(bytes), bytes_size);
+        xdbg("file:%s size: %d", file_path, bytes_size);
+        int cnt = 0;
+        for (auto index = 0; index < bytes_size; ++index) {
+            data.push_back(*(bytes + index));
+            // std::printf("%02x ", *(bytes + index));
+            // fflush(stdout);
+            // if (++cnt == 4) {
+            // std::printf("\n");fflush(stdout);
+            // cnt = 0;
+            // }
+        }
+        in.close();
+        Module(byte_IO{data});
+    }
     Module(byte_IO BinaryIO) {
         if (BinaryIO.read(4) != byte_vec{0x00, 0x61, 0x73, 0x6d}) {
             xerror("cppwasm : magic header not detected");
@@ -1143,10 +1175,12 @@ public:
             case TYPE_SECTION_INDEX:
                 xdbg("distribute TYPE section(%d): size: %d", TYPE_SECTION_INDEX, sz);
                 Type_section = TypeSection::GetTypeSection(sectionIO);
+                type_list = Type_section.data;
                 break;
             case IMPORT_SECTION_INDEX:
                 xdbg("distribute IMPORT section(%d): size: %d", IMPORT_SECTION_INDEX, sz);
                 Import_section = ImportSection::GetImportSection(sectionIO);
+                import_list = Import_section.data;
                 break;
             case FUNCTION_SECTION_INDEX:
                 xdbg("distribute FUNCTION section(%d): size: %d", FUNCTION_SECTION_INDEX, sz);
@@ -1155,18 +1189,22 @@ public:
             case TABLE_SECTION_INDEX:
                 xdbg("distribute TABLE section(%d): size: %d", TABLE_SECTION_INDEX, sz);
                 Table_section = TableSection::GetTableSection(sectionIO);
+                table_list = Table_section.data;
                 break;
             case MEMORY_SECTION_INDEX:
                 xdbg("distribute MEMORY section(%d): size: %d", MEMORY_SECTION_INDEX, sz);
                 Memory_section = MemorySection::GetMemorySection(sectionIO);
+                memory_list = Memory_section.data;
                 break;
             case GLOBAL_SECTION_INDEX:
                 xdbg("distribute GLOBAL section(%d): size: %d", GLOBAL_SECTION_INDEX, sz);
                 Global_section = GlobalSection::GetGlobalSection(sectionIO);
+                global_list = Global_section.data;
                 break;
             case EXPORT_SECTION_INDEX:
                 xdbg("distribute EXPORT section(%d): size: %d", EXPORT_SECTION_INDEX, sz);
                 Export_section = ExportSection::GetExportSection(sectionIO);
+                export_list = Export_section.data;
                 break;
             case START_SECTION_INDEX:
                 xdbg("distribute START section(%d): size: %d", START_SECTION_INDEX, sz);
@@ -1176,16 +1214,30 @@ public:
             case ELEMENT_SECTION_INDEX:
                 xdbg("distribute ELEMENT section(%d): size: %d", ELEMENT_SECTION_INDEX, sz);
                 Element_section = ElementSection::GetElementSection(sectionIO);
+                element_list = Element_section.data;
                 break;
             case CODE_SECTION_INDEX:
                 xdbg("distribute CODE section(%d): size: %d", CODE_SECTION_INDEX, sz);
                 Code_section = CodeSection::GetCodeSection(sectionIO);
                 ASSERT(Function_section.data.size() == Code_section.data.size(), "cppwasm: function and code section have inconsistent lengths");
-                // todo  mod . function list.
+                for (auto index = 0; index < Code_section.data.size(); ++index) {
+                    Function func{};
+                    func.type_index = Function_section.data[index];
+                    func.local_list = {};
+                    auto & ll = Code_section.data[index].func.local_list;
+                    for (auto i = 0; i < ll.size(); ++i) {
+                        for (auto _local : ll) {
+                            func.local_list.push_back(_local.type);
+                        }
+                    }
+                    func.expr = Code_section.data[index].func.expr;
+                    function_list.push_back(func);
+                }
                 break;
             case DATA_SECTION_INDEX:
                 xdbg("distribute DATA section(%d): size: %d", DATA_SECTION_INDEX, sz);
                 Data_section = DataSection::GetDataSection(sectionIO);
+                data_list = Data_section.data;
                 break;
             default:
                 xerror("cppwasm: out of section index !");
@@ -1194,9 +1246,7 @@ public:
         }
         xdbg("------------- Module end init --------------\n");
         ASSERT(Function_section.data.size() == Code_section.data.size(), "cppwasm: function and code section have inconsistent lengths");
-        
     };
-    
 
     CustomSection Custom_section{};
     TypeSection Type_section{};
@@ -1210,4 +1260,15 @@ public:
     ElementSection Element_section{};
     CodeSection Code_section{};
     DataSection Data_section{};
+
+    std::vector<FunctionType> type_list{};
+    std::vector<Function> function_list{};
+    std::vector<Table> table_list{};
+    std::vector<Memory> memory_list{};
+    std::vector<Global> global_list{};
+    std::vector<Element> element_list{};
+    std::vector<Data> data_list{};
+    std::vector<StartFunction> start{};
+    std::vector<Import> import_list{};
+    std::vector<Export> export_list{};
 };
