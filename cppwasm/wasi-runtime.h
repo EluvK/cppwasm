@@ -5,7 +5,7 @@
 class Runtime {
 public:
     // todo make bool->function.
-    Runtime(Module module, std::map<std::string, std::map<std::string, bool>> imps) {
+    Runtime(Module const & module, std::map<std::string, std::map<std::string, bool>> imps) {
         // todo check imp
 
         // todo import_list?
@@ -62,14 +62,36 @@ public:
         return -1;
     }
 
-    Result exec_accu(std::string name, std::vector<Value> args) {
+    // todo Variant the Result.
+    Result exec_accu(std::string const & name, std::vector<Value> v_args) {
         FunctionAddress addr = func_addr(name);
-        return machine.invocate(addr, args);
+        return machine.invocate(addr, v_args);
     }
 
-    // todo outer interface.
-    // Result exec(std::string name){}
+    Result exec(std::string const & name, std::vector<InputType> args) {
+        FunctionAddress addr = func_addr(name);
+        FunctionInstance func = machine.store.function_list[addr];
+        std::vector<Value> v_args{};
+        for(auto &a:args){
+            switch(a.GetType()){
+                case INPUT_TYPE_I64:{
+                    xdbg("Get Value I64 %d", a.GetConstRef<int64_t>());
+                    v_args.push_back(Value(a.GetConstRef<int64_t>()));
+                    break;
+                }
+                case INPUT_TYPE_F64:{
+                    v_args.push_back(Value(a.GetConstRef<double>()));
+                    break;
+                }
+                default:
+                    xerror("cppwasm: UNKNOW INPUT TYPE");
+            }
+        }
 
+        return exec_accu(name,v_args);
+    }
+
+    
     Machine machine;
     Store store;
 };

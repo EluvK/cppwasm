@@ -72,6 +72,8 @@ public:
     }
     byte data;
 };
+
+// todo  may remove class? using LabelIndex = byte? other index?
 class LabelIndex {
 public:
     LabelIndex() {
@@ -310,7 +312,11 @@ public:
 // mywork
 
 // base for ptr.
-class instruction_args_base {};
+class instruction_args_base {
+public:
+    virtual ~instruction_args_base() {
+    }
+};
 
 class args_block : public instruction_args_base {
 public:
@@ -335,6 +341,27 @@ public:
     std::pair<std::vector<LabelIndex>, LabelIndex> data;
 };
 
+class args_get_local : public instruction_args_base {
+public:
+    args_get_local(LabelIndex li) : data(li) {
+    }
+
+    LabelIndex data;
+};
+
+class args_i32_count : public instruction_args_base {
+public:
+    args_i32_count(int32_t i) : data(i) {
+    }
+    int32_t data;
+};
+
+class args_call : public instruction_args_base {
+public:
+    args_call(FunctionIndex fi) : data(fi) {
+    }
+    FunctionIndex data;
+};
 using args_ptr = std::shared_ptr<instruction_args_base>;
 
 //--------------
@@ -349,7 +376,8 @@ public:
     Instruction(){};
 
     byte opcode;
-    std::vector<args_ptr> args;
+    // std::vector<args_ptr> args;
+    args_ptr args;
     // args
     // std::vector<Ins_args_ptr>
 
@@ -367,13 +395,13 @@ public:
         case instruction::loop:
         case instruction::if_: {
             auto bt = BlockType::GetBlockType(BinaryIO);
-            o.args.push_back(std::make_shared<args_block>(bt));
+            o.args=std::make_shared<args_block>(bt);
             break;
         }
         case instruction::br:
         case instruction::br_if: {
             auto li = LabelIndex(U_decode_reader(BinaryIO));
-            o.args.push_back(std::make_shared<args_br>(li));
+            o.args=std::make_shared<args_br>(li);
             break;
         }
         case instruction::br_table: {
@@ -381,16 +409,23 @@ public:
             auto li = LabelIndex(U_decode_reader(BinaryIO));
             auto li_list = std::vector<LabelIndex>(n, li);
             auto b = LabelIndex(U_decode_reader(BinaryIO));
-            o.args.push_back(std::make_shared<args_br_table>(li_list, b));
+            o.args=std::make_shared<args_br_table>(li_list, b);
             break;
         }
-        case instruction::call:
-
+        case instruction::call:{
+            auto fi = FunctionIndex(U_decode_reader(BinaryIO));
+            o.args = std::make_shared<args_call>(fi);
+            break;
+        }
         case instruction::call_indirect:
 
         case instruction::get_local:
         case instruction::set_local:
-        case instruction::tee_local:
+        case instruction::tee_local:{
+            auto li = LabelIndex(U_decode_reader(BinaryIO));
+            o.args=std::make_shared<args_get_local>(li);
+            break;
+        }
 
         case instruction::get_global:
         case instruction::set_global:
@@ -422,14 +457,19 @@ public:
         case instruction::current_memory:
         case instruction::grow_memory:
 
-        case instruction::i32_const:
-
+        case instruction::i32_const: {
+            auto i32 = I_decode_reader(BinaryIO);
+            o.args=std::make_shared<args_i32_count>(i32);
+            break;
+        }
         case instruction::i64_const:
 
         case instruction::f32_const:
 
         case instruction::f64_const:
-            break;
+        
+        // default:
+            xdbg("unknow instruction: 0x%02x", o.opcode);
         }
         return o;
     };
@@ -707,14 +747,48 @@ public:
     }
 
     std::vector<Instruction> data;
-    // todo make position
+    std::map<int32_t,std::vector<int32_t>> position;
 
-    static Expression GetExpression(byte_IO BinaryIO) {
+    static std::map<int32_t,std::vector<int32_t>> mark(std::vector<Instruction> const & data){
+        // for(auto _I:data){
+        //     xdbg("0x%02x", _I.opcode);
+        // }
+        std::vector<std::vector<int32_t>> st;
+        std::map<int32_t,std::vector<int32_t>> _position;
+        for(auto index =0;index<data.size();++index){
+            auto &_instruction = data[index];
+            auto &_opcode = _instruction.opcode;
+            
+            if(_instruction.opcode==instruction::block||_instruction.opcode==instruction::loop||_instruction.opcode==instruction::if_){
+                // xdbg(" mark: push");
+                st.push_back({index});
+            }else if(_opcode==instruction::else_){
+                st.back().push_back(index);
+            }else if(_opcode==instruction::end){
+                // xdbg(" mark: end");
+                if(!st.empty()){
+                    // xdbg(" mark: end - pop");
+                    std::vector<int32_t> b = st.back();
+                    st.pop_back();
+                    b.insert(b.begin() + 1, index);
+                    for(auto _i:b){
+                        _position[_i] = b;
+                    }
+                }
+            }
+        }
+        ASSERT(st.empty(), "cppwasm: tmp stack not empty. %d", st.size());
+        return _position;
+    }
+
+    static Expression GetExpression(byte_IO & BinaryIO) {
         Expression exp{};
         uint32_t d = 1;
         while (true) {
             Instruction ins = Instruction::GetInstruction(BinaryIO);
             exp.data.push_back(ins);
+            // xdbg(" GETexpression: ins: opcode:0x%02x", ins.opcode);
+            printf("0x%02x,", ins.opcode);
             switch (ins.opcode) {
             case instruction::block:
             case instruction::loop:
@@ -733,7 +807,14 @@ public:
         if (exp.data.back().opcode != instruction::end) {
             xerror("cppwasm: expression did not end with 0x0b(END) ");
         }
-        // todo make position;
+        exp.position = mark(exp.data);
+        // ! debug
+        for(auto _v:exp.position){
+            printf("\n{ %d : [ ", _v.first);
+            for (auto u : _v.second)
+                printf("%d ", u);
+            printf("]}");
+        }
         return exp;
     }
 };
@@ -974,9 +1055,10 @@ public:
         Func res{};
         uint64_t size = U_decode_reader(BinaryIO);
         for (auto index = 0; index < size; ++index) {
+            // local decl count
             res.local_list.push_back(Locals::GetLocals(BinaryIO));
-            res.expr = Expression::GetExpression(BinaryIO);
         }
+        res.expr = Expression::GetExpression(BinaryIO);
         return res;
     }
     std::vector<Locals> local_list;
@@ -1008,9 +1090,14 @@ public:
         Code res{};
         res.size = U_decode_reader(BinaryIO);
         byte_IO code_bytes{BinaryIO.read(res.size)};
+        // ! for debug
+        for (auto _b : code_bytes.data) {
+            printf("0x%02x ", _b);
+        }
+        printf("\n");
         res.func = Func::GetFunc(code_bytes);
         // todo add assert
-        // ASSERT(code_bytes.empty(), "should be empty to be get all code.");
+        ASSERT(code_bytes.empty(), "should be empty to be get all code.");
         return res;
     }
     uint64_t size{0};
@@ -1151,9 +1238,8 @@ public:
             // }
         }
         in.close();
-        Module(byte_IO{data});
-    }
-    Module(byte_IO BinaryIO) {
+        byte_IO BinaryIO{data};
+
         if (BinaryIO.read(4) != byte_vec{0x00, 0x61, 0x73, 0x6d}) {
             xerror("cppwasm : magic header not detected");
         }

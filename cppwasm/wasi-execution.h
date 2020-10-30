@@ -1,11 +1,21 @@
 #pragma once
 #include "base/Variant.h"
 #include "base/wasi-define.h"
-#include "wasi-alu.h"
+// #include "wasi-alu.h"
 #include "wasi-binary.h"
+
+
+using InputType = Variant<int64_t, double>;
+#define INPUT_TYPE_I64 1
+#define INPUT_TYPE_F64 2
+
 class Value {
 public:
     Value() {
+    }
+    Value(int64_t i64) : data{I_encode(i64)}, type{TYPE_i64} {
+    }
+    Value(double f64) {
     }
     Value(byte _data) : data{_data} {
     }
@@ -13,9 +23,25 @@ public:
         type = _type;
         data = _data;
     }
+    static Value newValue(ValueType type, InputType data) {
+        switch (data.GetType()) {
+        case INPUT_TYPE_I64:
+            return Value(data.GetConstRef<int64_t>());
+        case INPUT_TYPE_F64:
+            return Value(data.GetConstRef<double>());
+        default:
+            xerror("cppwasm unknow input type");
+        }
+    }
+    static Value from_i32(int32_t i) {
+        return newValue(INPUT_TYPE_I64, i);
+    }
+
     int32_t to_i32() {
+        return I_decode(data);
     }
     int64_t to_i64() {
+        return I_decode(data);
     }
     float to_f32() {
     }
@@ -136,6 +162,8 @@ public:
  *
  */
 using FunctionInstance = Variant<WasmFunc, HostFunc>;
+#define FUNCTION_INSTANCE_WASM 1
+#define FUNCTION_INSTANCE_HOST 2
 
 /**
  * @brief A table instance is the runtime representation of a table. It holds a vector of function elements and an optional
@@ -260,6 +288,7 @@ public:
         return function_address;
     }
 
+    // todo check hostfunc
     FunctionAddress allocate_host_function(HostFunc hostfunc) {
         FunctionAddress function_address = function_list.size();
         function_list.push_back(hostfunc);
@@ -302,7 +331,7 @@ public:
     Label(int64_t _arity, int64_t _continuation) : arity{_arity}, continuation{_continuation} {
     }
 
-private:
+// private:
     int64_t arity;
     int64_t continuation;
 };
@@ -330,7 +359,7 @@ public:
 using stack_unit = Variant<Value, Label, Frame>;
 #define STACK_UNIT_VALUE_TYPE 1
 #define STACK_UNIT_LABEL_TYPE 2
-#define FRAME_UNIT_LABEL_TYPE 3
+#define STACK_UNIT_FRAME_TYPE 3
 /**
  * @brief Besides the store, most instructions interact with an implicit stack. The stack contains three kinds of entries:
  * Values: the operands of instructions.
@@ -352,17 +381,35 @@ public:
         data.emplace_back(u);
     }
     stack_unit pop() {
+        if (!data.size())
+            xerror("cppwasm empty stack!");
         auto u = data.back();
         data.pop_back();
         return u;
     }
     // todo complete it.
     Label get_nth_label(uint32_t i) {
-        while (i--) {
-            for (auto index = 0; index < data.size(); ++index) {
-                if (data[index].GetType() == STACK_UNIT_LABEL_TYPE && i == 0) {
+        // for(auto v:data){
+        //     if(v.GetType()==STACK_UNIT_LABEL_TYPE){
+        //         xdbg("label 1 %d,%d", v.GetRef<Label>().arity, v.GetRef<Label>().continuation);
+        //     }
+        // }
+
+        for (auto index = data.size() - 1; index >= 0; --index) {
+            if (data[index].GetType() == STACK_UNIT_LABEL_TYPE) {
+                if (i == 0)
                     return data[index].GetRef<Label>();
-                }
+                else
+                    --i;
+            }
+        }
+
+        for (auto index = 0; index < data.size(); ++index) {
+            if (data[index].GetType() == STACK_UNIT_LABEL_TYPE) {
+                if (i == 0)
+                    return data[index].GetRef<Label>();
+                else
+                    --i;
             }
         }
     }
@@ -427,19 +474,411 @@ public:
         stack.append(Label(frame.arity, frame.expr.data.size() - 1));
     }
 
-    Result call(FunctionAddress function_addr, std::vector<Value> function_args) {
+    Result call(FunctionAddress function_addr, std::vector<Value> & function_args);
+
+    Result exec();
+};
+
+
+
+/**
+ * ======================================================================================================================
+ * Instruction Set
+ * ======================================================================================================================
+ */
+
+class ArithmeticLogicUnit {
+public:
+    // todo make it smart_ptr
+    static void exec(Configuration * config, Instruction * i) {
+        switch(i->opcode){
+            case instruction::unreachable:
+            case instruction::nop:
+            case instruction::block:
+                block(config,i);
+                break;
+            case instruction::loop:
+            case instruction::if_:
+            case instruction::else_:
+                xdbg("instruction: 0x%02x", i->opcode);
+                break;
+            case instruction::end:
+                end(config, i);
+                break;
+            case instruction::br:
+                br(config, i);
+                break;
+            case instruction::br_if:
+                br_if(config, i);
+                break;
+            case instruction::br_table:
+                br_table(config, i);
+                break;
+            case instruction::return_:
+                return_(config,i);
+                break;
+            case instruction::call:
+                call(config, i);
+                break;
+            case instruction::call_indirect:
+                call_indirect(config, i);
+                break;
+            case instruction::drop:
+            case instruction::select:
+            xdbg("instruction: 0x%02x", i->opcode);
+                break;
+            case instruction::get_local:
+                get_local(config, i);
+                break;
+            case instruction::set_local:
+            case instruction::tee_local:
+            case instruction::get_global:
+            case instruction::set_global:
+            case instruction::i32_load:
+            case instruction::i64_load:
+            case instruction::f32_load:
+            case instruction::f64_load:
+            case instruction::i32_load8_s:
+            case instruction::i32_load8_u:
+            case instruction::i32_load16_s:
+            case instruction::i32_load16_u:
+            case instruction::i64_load8_s:
+            case instruction::i64_load8_u:
+            case instruction::i64_load16_s:
+            case instruction::i64_load16_u:
+            case instruction::i64_load32_s:
+            case instruction::i64_load32_u:
+            case instruction::i32_store:
+            case instruction::i64_store:
+            case instruction::f32_store:
+            case instruction::f64_store:
+            case instruction::i32_store8:
+            case instruction::i32_store16:
+            case instruction::i64_store8:
+            case instruction::i64_store16:
+            case instruction::i64_store32:
+            case instruction::current_memory:
+            case instruction::grow_memory:
+            xdbg("instruction: 0x%02x", i->opcode);
+                break;
+            case instruction::i32_const:
+                i32_const(config, i);
+                break;
+            case instruction::i64_const:
+            case instruction::f32_const:
+            case instruction::f64_const:
+            case instruction::i32_eqz:
+            case instruction::i32_eq:
+            case instruction::i32_ne:
+            case instruction::i32_lts:
+            case instruction::i32_ltu:
+            case instruction::i32_gts:
+            case instruction::i32_gtu:
+            case instruction::i32_les:
+            case instruction::i32_leu:
+                xdbg("instruction: 0x%02x", i->opcode);
+                break;
+            case instruction::i32_ges:
+                i32_ges(config,i);
+                break;
+            case instruction::i32_geu:
+            case instruction::i64_eqz:
+            case instruction::i64_eq:
+            case instruction::i64_ne:
+            case instruction::i64_lts:
+            case instruction::i64_ltu:
+            case instruction::i64_gts:
+            case instruction::i64_gtu:
+            case instruction::i64_les:
+            case instruction::i64_leu:
+            case instruction::i64_ges:
+            case instruction::i64_geu:
+            case instruction::f32_eq:
+            case instruction::f32_ne:
+            case instruction::f32_lt:
+            case instruction::f32_gt:
+            case instruction::f32_le:
+            case instruction::f32_ge:
+            case instruction::f64_eq:
+            case instruction::f64_ne:
+            case instruction::f64_lt:
+            case instruction::f64_gt:
+            case instruction::f64_le:
+            case instruction::f64_ge:
+            case instruction::i32_clz:
+            case instruction::i32_ctz:
+            case instruction::i32_popcnt:
+            xdbg("instruction: 0x%02x", i->opcode);
+                break;
+            case instruction::i32_add:
+                i32_add(config, i);
+                break;
+            case instruction::i32_sub:
+            case instruction::i32_mul:
+            case instruction::i32_divs:
+            case instruction::i32_divu:
+            case instruction::i32_rems:
+            case instruction::i32_remu:
+            case instruction::i32_and:
+            case instruction::i32_or:
+            case instruction::i32_xor:
+            case instruction::i32_shl:
+            case instruction::i32_shrs:
+            case instruction::i32_shru:
+            case instruction::i32_rotl:
+            case instruction::i32_rotr:
+            case instruction::i64_clz:
+            case instruction::i64_ctz:
+            case instruction::i64_popcnt:
+            case instruction::i64_add:
+            case instruction::i64_sub:
+            case instruction::i64_mul:
+            case instruction::i64_divs:
+            case instruction::i64_divu:
+            case instruction::i64_rems:
+            case instruction::i64_remu:
+            case instruction::i64_and:
+            case instruction::i64_or:
+            case instruction::i64_xor:
+            case instruction::i64_shl:
+            case instruction::i64_shrs:
+            case instruction::i64_shru:
+            case instruction::i64_rotl:
+            case instruction::i64_rotr:
+            case instruction::f32_abs:
+            case instruction::f32_neg:
+            case instruction::f32_ceil:
+            case instruction::f32_floor:
+            case instruction::f32_trunc:
+            case instruction::f32_nearest:
+            case instruction::f32_sqrt:
+            case instruction::f32_add:
+            case instruction::f32_sub:
+            case instruction::f32_mul:
+            case instruction::f32_div:
+            case instruction::f32_min:
+            case instruction::f32_max:
+            case instruction::f32_copysign:
+            case instruction::f64_abs:
+            case instruction::f64_neg:
+            case instruction::f64_ceil:
+            case instruction::f64_floor:
+            case instruction::f64_trunc:
+            case instruction::f64_nearest:
+            case instruction::f64_sqrt:
+            case instruction::f64_add:
+            case instruction::f64_sub:
+            case instruction::f64_mul:
+            case instruction::f64_div:
+            case instruction::f64_min:
+            case instruction::f64_max:
+            case instruction::f64_copysign:
+            case instruction::i32_wrap_i64:
+            case instruction::i32_trunc_sf32:
+            case instruction::i32_trunc_uf32:
+            case instruction::i32_trunc_sf64:
+            case instruction::i32_trunc_uf64:
+            case instruction::i64_extend_si32:
+            case instruction::i64_extend_ui32:
+            case instruction::i64_trunc_sf32:
+            case instruction::i64_trunc_uf32:
+            case instruction::i64_trunc_sf64:
+            case instruction::i64_trunc_uf64:
+            case instruction::f32_convert_si32:
+            case instruction::f32_convert_ui32:
+            case instruction::f32_convert_si64:
+            case instruction::f32_convert_ui64:
+            case instruction::f32_demote_f64:
+            case instruction::f64_convert_si32:
+            case instruction::f64_convert_ui32:
+            case instruction::f64_convert_si64:
+            case instruction::f64_convert_ui64:
+            case instruction::f64_promote_f32:
+            case instruction::i32_reinterpret_f32:
+            case instruction::i64_reinterpret_f64:
+            case instruction::f32_reinterpret_i32:
+            case instruction::f64_reinterpret_i64:
+
+                xdbg("instruction: 0x%02x", i->opcode);
+                break;
+        }
+        return;
     }
 
-    Result exec() {
-        auto instruction_list = frame.expr.data;
-        auto size = instruction_list.size();
-        while (pc < size) {
-            Instruction * i = &instruction_list[pc];
-            ArithmeticLogicUnit::exec(this, i);
-            pc += 1;
+    static void block(Configuration * config,Instruction *i){
+        xdbg("instruction: block");
+        auto ptr = dynamic_cast<args_block *>(i->args.get());
+        int32_t arity{1};
+        // todo make 0x40:convention.empty
+        if(ptr->data.data == 0x40){
+            arity = 0;
+        }
+        auto continuation = config->frame.expr.position[config->pc][1];
+        config->stack.append(Label{arity, continuation});
+    }
+
+    static void end(Configuration * config, Instruction * i) {
+        xdbg("instruction: end");
+        auto L = config->get_label(0).arity;
+        std::vector<stack_unit> tmp{};
+        xdbg(" - L:%d", L);
+        while (L--) {
+            tmp.push_back(config->stack.pop());
+            // auto s = config->stack.pop();
+            // if (s.GetType() == STACK_UNIT_VALUE_TYPE) {
+                // res_value_vec.push_back(s.GetRef<Value>());
+            // }
+        }
+        while(true){
+            auto s = config->stack.pop();
+            if (s.GetType() == STACK_UNIT_LABEL_TYPE)
+                break;
+            xdbg(" - end: pop ");
+        }
+        for (auto & v : tmp) {
+            config->stack.append(v);
         }
     }
+
+    static void br_label(Configuration * config, uint32_t i) {
+        Label L = config->get_label(i);
+        xdbg(" -Lable %d: arity: %d, continuation:%d", i, L.arity, L.continuation);
+
+        std::vector<stack_unit> _v;
+        for (auto index = 0; index < L.arity; ++index) {
+            _v.push_back(config->stack.pop());
+        }
+        int32_t s = 0, n = i;
+        if (L.continuation >= config->pc)
+            n++;
+        while (s != n) {
+            auto e = config->stack.pop();
+            if (e.GetType() == STACK_UNIT_LABEL_TYPE)
+                s++;
+        }
+        for (auto & e : _v) {
+            config->stack.append(e);
+        }
+        config->pc = L.continuation;
+    }
+
+    static void br(Configuration * config, Instruction * i) {
+        xdbg("instruction: br");
+        auto ptr = dynamic_cast<args_br *>(i->args.get());
+        return br_label(config, ptr->data.data);
+    }
+
+    static void br_if(Configuration * config, Instruction * i) {
+        xdbg("instruction: br_if");
+        if (config->stack.pop().GetRef<Value>().to_i32()) {
+            auto ptr = dynamic_cast<args_br *>(i->args.get());
+            return br_label(config, ptr->data.data);
+        }
+    }
+
+    static void br_table(Configuration * config, Instruction * i) {
+        xdbg("instruction: br_table");
+        auto ptr = dynamic_cast<args_br_table *>(i->args.get());
+        auto a = ptr->data.first;
+        auto l = ptr->data.second.data;
+        auto c = config->stack.pop().GetRef<Value>().to_i32();
+        if (c >= 0 && c < a.size()) {
+            l = a[c].data;
+        }
+        return br_label(config, l);
+    }
+    
+    static void return_(Configuration * config,Instruction *i){
+        xdbg("instruction: return_");
+        std::vector<stack_unit> tmp;
+        for (auto index = 0; index < config->frame.arity; index++) {
+            tmp.push_back(config->stack.pop());
+        }
+        while (true) {
+            auto e = config->stack.pop();
+            if (e.GetType() == STACK_UNIT_FRAME_TYPE) {
+                config->stack.append(e);
+                break;
+            }
+        }
+        for (auto & e : tmp) {
+            config->stack.append(e);
+        }
+        config->pc = config->frame.expr.data.size() - 1;
+    }
+
+    static void call_function_addr(Configuration * config, FunctionAddress function_addr) {
+        // todo make it const var
+        if (config->depth > 1024) {
+            xerror("cppwasm: call stack exhausted");
+        }
+
+        FunctionInstance function = config->store.function_list[function_addr];
+        // auto func_type = function.GetRef<>
+        FunctionType func_type{};
+        if (function.GetType() == FUNCTION_INSTANCE_HOST) {
+            func_type = function.GetRef<HostFunc>().type;
+        } else {
+            ASSERT(function.GetType() == FUNCTION_INSTANCE_WASM, "error function varient");
+            func_type = function.GetRef<WasmFunc>().type;
+        }
+        std::vector<Value> function_args{};
+        for (auto index = 0; index < func_type.args.data.size(); ++index) {
+            function_args.push_back(config->stack.pop());
+        }
+
+        xdbg("%d,%d", func_type.args.data.size(), function_args[0].to_i32());
+        Configuration subconf(config->store);
+        subconf.depth = config->depth + 1;
+        Result r = subconf.call(function_addr, function_args);
+        for (auto _v : r.data) {
+            config->stack.append(_v);
+        }
+    }
+
+    static void call(Configuration * config, Instruction * i) {
+        xdbg("instruction: call");
+        auto ptr = dynamic_cast<args_call *>(i->args.get());
+        call_function_addr(config, ptr->data.data);
+    }
+
+    static void call_indirect(Configuration * config,Instruction * i){
+        xerror("haven't write this ins");
+    }
+
+
+    static void get_local(Configuration * config, Instruction * i){
+        xdbg("instruction: get_local");
+        auto ptr = dynamic_cast<args_get_local *>(i->args.get());
+        config->stack.append(config->frame.local_list[ptr->data.data]);
+    }
+
+    static void i32_const(Configuration * config ,Instruction * i){
+        xdbg("instruction: i32_const");
+        config->stack.append(Value::from_i32(dynamic_cast<args_i32_count *>(i->args.get())->data));
+    }
+
+    static void i32_ges(Configuration * config,Instruction * i){
+        xdbg("instruction: i32_ges");
+        auto b = config->stack.pop().GetRef<Value>().to_i32();
+        auto a = config->stack.pop().GetRef<Value>().to_i32();
+        int32_t c = a >= b ? 1 : 0;
+        config->stack.append(Value::from_i32(c));
+    }
+
+    static void i32_add(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_add");
+        auto a = config->stack.pop().GetRef<Value>().to_i32();
+        auto b = config->stack.pop().GetRef<Value>().to_i32();
+        auto c = Value::from_i32(a + b);
+        config->stack.append(c);
+    }
 };
+
+
+
+
+
 
 /**
  * @brief Execution behavior is defined in terms of an abstract machine that models the program state. It includes a stack,
@@ -454,7 +893,7 @@ public:
     ModuleInstance module_instance{};
     Store store{};
 
-    void instantiate(Module module, std::vector<ExternValue> extern_value_list) {
+    void instantiate(Module const &module, std::vector<ExternValue> extern_value_list) {
         module_instance.type_list = module.type_list;
 
         // todo more check
@@ -511,7 +950,8 @@ public:
         // todo run start?
     }
 
-    void allocate(Module module, std::vector<ExternValue> extern_value_list, std::vector<Value> global_value) {
+    void allocate(Module const &module, std::vector<ExternValue> extern_value_list, std::vector<Value> global_value) {
+        xdbg("---------allocate--------------");
         for (auto p : extern_value_list) {
             switch (p.first) {
             case FUNCTION_EXT_INDEX:
@@ -529,48 +969,48 @@ public:
             }
         }
 
-        for (auto _function : module.function_list) {
+        for (auto &_function : module.function_list) {
             auto function_addr = store.allocate_wasm_function(module_instance, _function);
             module_instance.function_addr_list.push_back(function_addr);
         }
 
-        for (auto _table : module.table_list) {
+        for (auto &_table : module.table_list) {
             auto table_addr = store.allocate_table(_table.type);
             module_instance.table_addr_list.push_back(table_addr);
         }
 
-        for (auto _memory : module.memory_list) {
+        for (auto &_memory : module.memory_list) {
             auto memory_addr = store.allocate_memory(_memory.type);
             module_instance.memory_addr_list.push_back(memory_addr);
         }
 
         for (auto index = 0; index < module.global_list.size(); ++index) {
-            auto _global = module.global_list[index];
+            auto &_global = module.global_list[index];
             auto global_addr = store.allocate_global(_global.type, global_value[index]);
         }
 
-        for (auto _export : module.export_list) {
+        for (auto &_export : module.export_list) {
             // Variant<FunctionIndex, TableIndex, MemoryIndex, GlobalIndex> exportdesc;
             ExternValue extern_value{};
             switch (_export.exportdesc.GetType()) {
             case 1: {
                 // FunctionIndex
-                auto addr = module_instance.function_addr_list[_export.exportdesc.GetRef<FunctionIndex>().data];
+                auto addr = module_instance.function_addr_list[_export.exportdesc.GetConstRef<FunctionIndex>().data];
                 extern_value = std::make_pair(0, addr);
                 break;
             }
             case 2: {
-                auto addr = module_instance.table_addr_list[_export.exportdesc.GetRef<TableIndex>().data];
+                auto addr = module_instance.table_addr_list[_export.exportdesc.GetConstRef<TableIndex>().data];
                 extern_value = std::make_pair(1, addr);
                 break;
             }
             case 3: {
-                auto addr = module_instance.memory_addr_list[_export.exportdesc.GetRef<MemoryIndex>().data];
+                auto addr = module_instance.memory_addr_list[_export.exportdesc.GetConstRef<MemoryIndex>().data];
                 extern_value = std::make_pair(2, addr);
                 break;
             }
             case 4: {
-                auto addr = module_instance.gloabl_addr_list[_export.exportdesc.GetRef<GlobalIndex>().data];
+                auto addr = module_instance.gloabl_addr_list[_export.exportdesc.GetConstRef<GlobalIndex>().data];
                 extern_value = std::make_pair(3, addr);
                 break;
             }
