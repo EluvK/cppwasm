@@ -1,6 +1,6 @@
 #pragma once
-#include "base/wasi-define.h"
 #include "base/Variant.h"
+#include "base/wasi-define.h"
 #include "wasi-leb128.h"
 
 #include <fstream>
@@ -395,13 +395,13 @@ public:
         case instruction::loop:
         case instruction::if_: {
             auto bt = BlockType::GetBlockType(BinaryIO);
-            o.args=std::make_shared<args_block>(bt);
+            o.args = std::make_shared<args_block>(bt);
             break;
         }
         case instruction::br:
         case instruction::br_if: {
             auto li = LabelIndex(U_decode_reader(BinaryIO));
-            o.args=std::make_shared<args_br>(li);
+            o.args = std::make_shared<args_br>(li);
             break;
         }
         case instruction::br_table: {
@@ -409,26 +409,30 @@ public:
             auto li = LabelIndex(U_decode_reader(BinaryIO));
             auto li_list = std::vector<LabelIndex>(n, li);
             auto b = LabelIndex(U_decode_reader(BinaryIO));
-            o.args=std::make_shared<args_br_table>(li_list, b);
+            o.args = std::make_shared<args_br_table>(li_list, b);
             break;
         }
-        case instruction::call:{
+        case instruction::call: {
             auto fi = FunctionIndex(U_decode_reader(BinaryIO));
             o.args = std::make_shared<args_call>(fi);
             break;
         }
-        case instruction::call_indirect:
+        case instruction::call_indirect: {
+            xerror("unfinish instruction: call_indirect");
+        }
 
         case instruction::get_local:
         case instruction::set_local:
-        case instruction::tee_local:{
+        case instruction::tee_local: {
             auto li = LabelIndex(U_decode_reader(BinaryIO));
-            o.args=std::make_shared<args_get_local>(li);
+            o.args = std::make_shared<args_get_local>(li);
             break;
         }
 
         case instruction::get_global:
-        case instruction::set_global:
+        case instruction::set_global: {
+            xerror("unfinish instruction: get&&set global");
+        }
 
         case instruction::i32_load:
         case instruction::i64_load:
@@ -459,7 +463,7 @@ public:
 
         case instruction::i32_const: {
             auto i32 = I_decode_reader(BinaryIO);
-            o.args=std::make_shared<args_i32_count>(i32);
+            o.args = std::make_shared<args_i32_count>(i32);
             break;
         }
         case instruction::i64_const:
@@ -467,8 +471,8 @@ public:
         case instruction::f32_const:
 
         case instruction::f64_const:
-        
-        // default:
+
+            // default:
             xdbg("unknow instruction: 0x%02x", o.opcode);
         }
         return o;
@@ -747,31 +751,31 @@ public:
     }
 
     std::vector<Instruction> data;
-    std::map<int32_t,std::vector<int32_t>> position;
+    std::map<int32_t, std::vector<int32_t>> position;
 
-    static std::map<int32_t,std::vector<int32_t>> mark(std::vector<Instruction> const & data){
+    static std::map<int32_t, std::vector<int32_t>> mark(std::vector<Instruction> const & data) {
         // for(auto _I:data){
         //     xdbg("0x%02x", _I.opcode);
         // }
         std::vector<std::vector<int32_t>> st;
-        std::map<int32_t,std::vector<int32_t>> _position;
-        for(auto index =0;index<data.size();++index){
-            auto &_instruction = data[index];
-            auto &_opcode = _instruction.opcode;
-            
-            if(_instruction.opcode==instruction::block||_instruction.opcode==instruction::loop||_instruction.opcode==instruction::if_){
+        std::map<int32_t, std::vector<int32_t>> _position;
+        for (auto index = 0; index < data.size(); ++index) {
+            auto & _instruction = data[index];
+            auto & _opcode = _instruction.opcode;
+
+            if (_instruction.opcode == instruction::block || _instruction.opcode == instruction::loop || _instruction.opcode == instruction::if_) {
                 // xdbg(" mark: push");
                 st.push_back({index});
-            }else if(_opcode==instruction::else_){
+            } else if (_opcode == instruction::else_) {
                 st.back().push_back(index);
-            }else if(_opcode==instruction::end){
+            } else if (_opcode == instruction::end) {
                 // xdbg(" mark: end");
-                if(!st.empty()){
+                if (!st.empty()) {
                     // xdbg(" mark: end - pop");
                     std::vector<int32_t> b = st.back();
                     st.pop_back();
                     b.insert(b.begin() + 1, index);
-                    for(auto _i:b){
+                    for (auto _i : b) {
                         _position[_i] = b;
                     }
                 }
@@ -808,13 +812,13 @@ public:
             xerror("cppwasm: expression did not end with 0x0b(END) ");
         }
         exp.position = mark(exp.data);
-        // ! debug
-        for(auto _v:exp.position){
-            printf("\n{ %d : [ ", _v.first);
-            for (auto u : _v.second)
-                printf("%d ", u);
-            printf("]}");
-        }
+        // // ! debug
+        // for(auto _v:exp.position){
+        //     printf("\n{ %d : [ ", _v.first);
+        //     for (auto u : _v.second)
+        //         printf("%d ", u);
+        //     printf("]}");
+        // }
         return exp;
     }
 };

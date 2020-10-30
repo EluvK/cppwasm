@@ -1,35 +1,34 @@
 #include "cppwasm/wasi-execution.h"
 
 Result Configuration::call(FunctionAddress function_addr, std::vector<Value> & function_args) {
-        auto & function = store.function_list[function_addr];
-        xdbg("-----------------Configuration call--------------");
-        xdbg("call %s function_addr: %d (list size:%d)", function.GetType() == 1 ? "wasmfunc" : "hostfunc", function_addr, store.function_list.size());
+    auto & function = store.function_list[function_addr];
+    xdbg("-----------------Configuration call--------------");
+    xdbg("call %s function_addr: %d (list size:%d)", function.GetType() == 1 ? "wasmfunc" : "hostfunc", function_addr, store.function_list.size());
 
-        // todo assert func type match args.
+    // todo assert func type match args.
 
-        switch(function.GetType()){
-            case 1:{
-                // WASM func
-                auto const & func = function.GetConstRef<WasmFunc>();
-                auto const & value_type_vec = func.code.local_list;
-                xdbg("func code size: %d", func.code.expr.data.size());
-                for(auto const &_value_type:value_type_vec){
-                    function_args.push_back(Value::newValue(_value_type, 0));
-                }
-                Frame frame{func.module, function_args, func.code.expr, func.type.rets.data.size()};
-                set_frame(frame);
-                return exec();
-            }
-            case 2:{
-                // LOCAL func
-
-            }
-            default:
-                xerror("cppwasm: unknow function type %d", function.GetType());
+    switch (function.GetType()) {
+    case 1: {
+        // WASM func
+        auto const & func = function.GetConstRef<WasmFunc>();
+        auto const & value_type_vec = func.code.local_list;
+        xdbg("func code size: %d", func.code.expr.data.size());
+        for (auto const & _value_type : value_type_vec) {
+            function_args.push_back(Value::newValue(_value_type, 0));
         }
-
-        return {};
+        Frame frame{func.module, function_args, func.code.expr, func.type.rets.data.size()};
+        set_frame(frame);
+        return exec();
     }
+    case 2: {
+        // LOCAL func
+    }
+    default:
+        xerror("cppwasm: unknow function type %d", function.GetType());
+    }
+
+    return {};
+}
 
 Result Configuration::exec() {
     xdbg("--------exec code: ----------");
@@ -39,7 +38,7 @@ Result Configuration::exec() {
     while (pc < size) {
         Instruction * i = &instruction_list[pc];
         ArithmeticLogicUnit::exec(this, i);
-        xdbg("PC: %d",pc);
+        xdbg("PC: %d", pc);
         pc += 1;
     }
     auto _arity = frame.arity;
@@ -49,7 +48,7 @@ Result Configuration::exec() {
         // xdbg("  stack len:%d", stack.len());
         auto r = stack.pop();
         // xdbg("  type:%d",r.GetType());
-        switch(r.GetType()){
+        switch (r.GetType()) {
         case STACK_UNIT_VALUE_TYPE:
             res.data.push_back(r.GetRef<Value>());
             xdbg("Result: %d", r.GetRef<Value>().to_i32());
