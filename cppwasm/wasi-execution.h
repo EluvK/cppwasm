@@ -4,9 +4,10 @@
 // #include "wasi-alu.h"
 #include "wasi-binary.h"
 
-using InputType = Variant<int64_t, double>;
+using InputType = Variant<int64_t, double, std::string>;
 #define INPUT_TYPE_I64 1
 #define INPUT_TYPE_F64 2
+#define INPUT_TYPE_STR 3
 
 class Value {
 public:
@@ -15,6 +16,8 @@ public:
     Value(int64_t i64) : data{I_encode(i64)}, type{TYPE_i64} {
     }
     Value(double f64) {
+    }
+    Value(std::string str) : str_data{str} {
     }
     Value(byte _data) : data{_data} {
     }
@@ -48,10 +51,14 @@ public:
     }
     double to_f64() {
     }
+    std::string to_string(){
+        return str_data;
+    }
 
 private:
     byte type;
     byte_vec data;
+    std::string str_data;
 };
 
 class Result {

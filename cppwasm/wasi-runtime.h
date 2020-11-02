@@ -80,6 +80,10 @@ public:
                     v_args.push_back(Value(a.GetConstRef<double>()));
                     break;
                 }
+                case INPUT_TYPE_STR:{
+                    v_args.push_back(Value(a.GetConstRef<std::string>()));
+                    break;
+                }
                 default:
                     xerror("cppwasm: UNKNOW INPUT TYPE");
             }
