@@ -9,7 +9,7 @@ int64_t cal_fib(int64_t n) {
     return cal_fib(n - 1) + cal_fib(n - 2);
 }
 
-class func_fib : public func_base {
+class func_fib : public host_func_base {
 public:
     Result operator()(std::vector<Value> args, std::vector<ValueType> types) override {
         xdbg("cppwasm: fib");
@@ -19,7 +19,7 @@ public:
         return r;
     }
 };
-class func_print : public func_base {
+class func_print : public host_func_base {
 public:
     Result operator()(std::vector<Value> args, std::vector<ValueType> types) override {
         xdbg("cppwasm: print");
@@ -35,10 +35,10 @@ TEST(test_, etx_1) {
 
     Module mod{file_path};
     func_fib fib;
-    func_base_ptr _fib = std::make_shared<func_fib>(fib);
+    host_func_base_ptr _fib = std::make_shared<func_fib>(fib);
     func_print print;
-    func_base_ptr _print = std::make_shared<func_print>(print);
-    std::map<std::string, std::map<std::string, func_base_ptr>> imps;
+    host_func_base_ptr _print = std::make_shared<func_print>(print);
+    std::map<std::string, std::map<std::string, host_func_base_ptr>> imps;
     imps["env"] = {{"fib", _fib}, {"print", _print}};
     Runtime runtime{mod, imps};
     runtime.exec("cal", {10});

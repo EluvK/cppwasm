@@ -4,7 +4,7 @@
 
 class Runtime {
 public:
-    Runtime(Module const & module, std::map<std::string, std::map<std::string, func_base_ptr>> & imps) {
+    Runtime(Module const & module, std::map<std::string, std::map<std::string, host_func_base_ptr>> & imps) {
 
         // todo import_list?
         std::vector<ExternValue> extern_value_list;
@@ -15,7 +15,7 @@ public:
                 // extern_memory = 0x02
                 // extern_global = 0x03
             case 0x00: {
-                HostFunc hf{module.type_list[_import.desc], imps[_import.module][_import.name]};  // func_base_ptr
+                HostFunc hf{module.type_list[_import.desc], imps[_import.module][_import.name]};  // host_func_base_ptr
                 auto addr = machine.store.allocate_host_function(hf);
                 extern_value_list.push_back(std::make_pair(FUNCTION_EXT_INDEX, addr));
                 break;

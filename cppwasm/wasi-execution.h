@@ -143,13 +143,14 @@ public:
     Function code;
 };
 
-class func_base{
+/**
+ * @brief Any internal method should inherit this class and implement its function in the overloaded operator(). 
+ */
+class host_func_base{
 public:
-    virtual ~func_base(){}
-
     virtual Result operator()(std::vector<Value> args, std::vector<ValueType> types) = 0;
 };
-using func_base_ptr = std::shared_ptr<func_base>;
+using host_func_base_ptr = std::shared_ptr<host_func_base>;
 /**
  * @brief A host function is a function expressed outside WebAssembly but passed to a module as an import. The definition
  * and behavior of host functions are outside the scope of this specification. For the purpose of this
@@ -159,7 +160,7 @@ using func_base_ptr = std::shared_ptr<func_base>;
  */
 class HostFunc {
 public:
-    HostFunc(FunctionType _type, func_base_ptr _callable) : type{_type}, callable{_callable} {
+    HostFunc(FunctionType _type, host_func_base_ptr _callable) : type{_type}, callable{_callable} {
     }
 
     Result exec(std::vector<Value> function_args, std::vector<ValueType> args_type) const {
@@ -167,7 +168,7 @@ public:
     }
 
     FunctionType type;
-    func_base_ptr callable;
+    host_func_base_ptr callable;
 };
 
 /**
