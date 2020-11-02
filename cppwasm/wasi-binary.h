@@ -10,81 +10,115 @@
  * ======================================================================================================================
  */
 
-class TypeIndex {
-public:
-    TypeIndex() {
-    }
-    TypeIndex(byte b) : data{b} {
-    }
-    static TypeIndex GetTypeIndex(byte_IO & BinaryIO) {
-        return TypeIndex{U_decode_reader(BinaryIO)};
-    }
-    byte data;
-};
-class FunctionIndex {
-public:
-    FunctionIndex() {
-    }
-    FunctionIndex(byte b) : data{b} {
-    }
-    static FunctionIndex GetFunctionIndex(byte_IO & BinaryIO) {
-        return FunctionIndex{U_decode_reader(BinaryIO)};
-    }
-    byte data;
-};
-class TableIndex {
-public:
-    TableIndex() {
-    }
-    TableIndex(byte b) : data{b} {
-    }
-    static TableIndex GetTableIndex(byte_IO & BinaryIO) {
-        return TableIndex{U_decode_reader(BinaryIO)};
-    }
-    byte data;
-};
-class MemoryIndex {
-public:
-    MemoryIndex() {
-    }
-    MemoryIndex(byte b) : data{b} {
-    }
-    static MemoryIndex GetMemoryIndex(byte_IO & BinaryIO) {
-        return MemoryIndex{U_decode_reader(BinaryIO)};
-    }
-    byte data;
-};
-class GlobalIndex {
-public:
-    GlobalIndex(byte b) : data{b} {
-    }
-    static GlobalIndex GetGlobalIndex(byte_IO & BinaryIO) {
-        return GlobalIndex{U_decode_reader(BinaryIO)};
-    }
-    byte data;
-};
-class LocalIndex {
-public:
-    LocalIndex(byte b) : data{b} {
-    }
-    static LocalIndex GetLocalIndex(byte_IO & BinaryIO) {
-        return LocalIndex{U_decode_reader(BinaryIO)};
-    }
-    byte data;
-};
+// class TypeIndex {
+// public:
+//     TypeIndex() {
+//     }
+//     TypeIndex(byte b) : data{b} {
+//     }
+//     static TypeIndex GetTypeIndex(byte_IO & BinaryIO) {
+//         return TypeIndex{U_decode_reader(BinaryIO)};
+//     }
+//     byte data;
+// };
+using TypeIndex = byte;
+static TypeIndex GetTypeIndex(byte_IO & BinaryIO) {
+    return TypeIndex{U_decode_reader(BinaryIO)};
+}
+
+// class FunctionIndex {
+// public:
+//     FunctionIndex() {
+//     }
+//     FunctionIndex(byte b) : data{b} {
+//     }
+//     static FunctionIndex GetFunctionIndex(byte_IO & BinaryIO) {
+//         return FunctionIndex{U_decode_reader(BinaryIO)};
+//     }
+//     byte data;
+// };
+using FunctionIndex = byte;
+static FunctionIndex GetFunctionIndex(byte_IO & BinaryIO) {
+    return FunctionIndex{U_decode_reader(BinaryIO)};
+}
+
+// class TableIndex {
+// public:
+//     TableIndex() {
+//     }
+//     TableIndex(byte b) : data{b} {
+//     }
+//     static TableIndex GetTableIndex(byte_IO & BinaryIO) {
+//         return TableIndex{U_decode_reader(BinaryIO)};
+//     }
+//     byte data;
+// };
+using TableIndex = byte;
+static TableIndex GetTableIndex(byte_IO & BinaryIO) {
+    return TableIndex{U_decode_reader(BinaryIO)};
+}
+
+// class MemoryIndex {
+// public:
+//     MemoryIndex() {
+//     }
+//     MemoryIndex(byte b) : data{b} {
+//     }
+//     static MemoryIndex GetMemoryIndex(byte_IO & BinaryIO) {
+//         return MemoryIndex{U_decode_reader(BinaryIO)};
+//     }
+//     byte data;
+// };
+using MemoryIndex = byte;
+static MemoryIndex GetMemoryIndex(byte_IO & BinaryIO) {
+    return MemoryIndex{U_decode_reader(BinaryIO)};
+}
+
+// class GlobalIndex {
+// public:
+//     GlobalIndex(byte b) : data{b} {
+//     }
+//     static GlobalIndex GetGlobalIndex(byte_IO & BinaryIO) {
+//         return GlobalIndex{U_decode_reader(BinaryIO)};
+//     }
+//     byte data;
+// };
+using GlobalIndex = byte;
+static GlobalIndex GetGlobalIndex(byte_IO & BinaryIO) {
+    return GlobalIndex{U_decode_reader(BinaryIO)};
+}
+
+// class LocalIndex {
+// public:
+//     LocalIndex(byte b) : data{b} {
+//     }
+//     static LocalIndex GetLocalIndex(byte_IO & BinaryIO) {
+//         return LocalIndex{U_decode_reader(BinaryIO)};
+//     }
+//     byte data;
+// };
+using LocalIndex = byte;
+static LocalIndex GetLocalIndex(byte_IO & BinaryIO) {
+    return LocalIndex{U_decode_reader(BinaryIO)};
+}
 
 // todo  may remove class? using LabelIndex = byte? other index?
-class LabelIndex {
-public:
-    LabelIndex() {
-    }
-    LabelIndex(byte b) : data{b} {
-    }
-    static LabelIndex GetLabelIndex(byte_IO & BinaryIO) {
-        return LabelIndex{U_decode_reader(BinaryIO)};
-    }
-    byte data;
-};
+// class LabelIndex {
+// public:
+//     LabelIndex() {
+//     }
+//     LabelIndex(byte b) : data{b} {
+//     }
+//     static LabelIndex GetLabelIndex(byte_IO & BinaryIO) {
+//         return LabelIndex{U_decode_reader(BinaryIO)};
+//     }
+//     byte data;
+// };
+
+using LabelIndex = byte;
+static LabelIndex GetLabelIndex(byte_IO & BinaryIO) {
+    return LabelIndex{U_decode_reader(BinaryIO)};
+}
 
 /**
  * ======================================================================================================================
@@ -583,7 +617,7 @@ public:
         // extern_memory = 0x02
         // extern_global = 0x03
         case 0:
-            res.importdesc = TypeIndex::GetTypeIndex(BinaryIO);
+            res.importdesc = GetTypeIndex(BinaryIO);
             break;
         case 1:
             res.importdesc = TableType::GetTableType(BinaryIO);
@@ -649,7 +683,7 @@ public:
         FunctionSection res{};
         uint64_t size = U_decode_reader(BinaryIO);
         for (auto index = 0; index < size; ++index) {
-            res.data.push_back(TypeIndex::GetTypeIndex(BinaryIO));
+            res.data.push_back(GetTypeIndex(BinaryIO));
         }
         return res;
     }
@@ -896,16 +930,16 @@ public:
             // extern_memory = 0x02
             // extern_global = 0x03
         case 0:
-            res.exportdesc = FunctionIndex::GetFunctionIndex(BinaryIO);
+            res.exportdesc = GetFunctionIndex(BinaryIO);
             break;
         case 1:
-            res.exportdesc = TableIndex::GetTableIndex(BinaryIO);
+            res.exportdesc = GetTableIndex(BinaryIO);
             break;
         case 2:
-            res.exportdesc = MemoryIndex::GetMemoryIndex(BinaryIO);
+            res.exportdesc = GetMemoryIndex(BinaryIO);
             break;
         case 3:
-            res.exportdesc = GlobalIndex::GetGlobalIndex(BinaryIO);
+            res.exportdesc = GetGlobalIndex(BinaryIO);
             break;
         default:
             xerror("cppwasm : something bug ? %d", res.type);
@@ -914,7 +948,8 @@ public:
     }
     std::string name;
     byte type;
-    Variant<FunctionIndex, TableIndex, MemoryIndex, GlobalIndex> exportdesc;
+    // Variant<FunctionIndex, TableIndex, MemoryIndex, GlobalIndex> exportdesc;
+    byte exportdesc;
 };
 
 /**
@@ -955,7 +990,7 @@ public:
     }
     static StartFunction GetStartFunction(byte_IO & BinaryIO) {
         StartFunction res{};
-        res.function_index = FunctionIndex::GetFunctionIndex(BinaryIO);
+        res.function_index = GetFunctionIndex(BinaryIO);
         return res;
     }
 
@@ -988,11 +1023,11 @@ public:
     }
     static Element GetElement(byte_IO & BinaryIO) {
         Element res{};
-        res.table_index = TableIndex::GetTableIndex(BinaryIO);
+        res.table_index = GetTableIndex(BinaryIO);
         res.offset = Expression::GetExpression(BinaryIO);
         uint64_t size = U_decode_reader(BinaryIO);
         for (auto index = 0; index < size; ++index) {
-            res.init.push_back(FunctionIndex::GetFunctionIndex(BinaryIO));
+            res.init.push_back(GetFunctionIndex(BinaryIO));
         }
         return res;
     }
@@ -1145,7 +1180,7 @@ public:
     }
     static Data GetData(byte_IO & BinaryIO) {
         Data res{};
-        res.memory_index = MemoryIndex::GetMemoryIndex(BinaryIO);
+        res.memory_index = GetMemoryIndex(BinaryIO);
         res.offset = Expression::GetExpression(BinaryIO);
         uint64_t size = U_decode_reader(BinaryIO);
         res.init = BinaryIO.read(size);

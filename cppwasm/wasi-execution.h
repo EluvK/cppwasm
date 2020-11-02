@@ -294,7 +294,7 @@ public:
 
     FunctionAddress allocate_wasm_function(ModuleInstance module, Function const & function) {
         FunctionAddress function_address = function_list.size();
-        FunctionType function_type = module.type_list[function.type_index.data];
+        FunctionType function_type = module.type_list[function.type_index];
         WasmFunc wasmfunc{function_type, module, function};
         function_list.push_back(wasmfunc);
         return function_address;
@@ -839,14 +839,14 @@ public:
     static void br(Configuration * config, Instruction * i) {
         xdbg("instruction: br");
         auto ptr = dynamic_cast<args_br *>(i->args.get());
-        return br_label(config, ptr->data.data);
+        return br_label(config, ptr->data);
     }
 
     static void br_if(Configuration * config, Instruction * i) {
         xdbg("instruction: br_if");
         if (config->stack.pop().GetRef<Value>().to_i32()) {
             auto ptr = dynamic_cast<args_br *>(i->args.get());
-            return br_label(config, ptr->data.data);
+            return br_label(config, ptr->data);
         }
     }
 
@@ -854,10 +854,10 @@ public:
         xdbg("instruction: br_table");
         auto ptr = dynamic_cast<args_br_table *>(i->args.get());
         auto a = ptr->data.first;
-        auto l = ptr->data.second.data;
+        auto l = ptr->data.second;
         auto c = config->stack.pop().GetRef<Value>().to_i32();
         if (c >= 0 && c < a.size()) {
-            l = a[c].data;
+            l = a[c];
         }
         return br_label(config, l);
     }
@@ -913,7 +913,7 @@ public:
     static void call(Configuration * config, Instruction * i) {
         xdbg("instruction: call");
         auto ptr = dynamic_cast<args_call *>(i->args.get());
-        call_function_addr(config, ptr->data.data);
+        call_function_addr(config, ptr->data);
     }
 
     static void call_indirect(Configuration * config, Instruction * i) {
@@ -938,7 +938,7 @@ public:
     static void get_local(Configuration * config, Instruction * i) {
         xdbg("instruction: get_local");
         auto ptr = dynamic_cast<args_get_local *>(i->args.get());
-        config->stack.append(config->frame.local_list[ptr->data.data]);
+        config->stack.append(config->frame.local_list[ptr->data]);
     }
 
     static void set_local(Configuration * config, Instruction * i) {
@@ -946,7 +946,7 @@ public:
         auto ptr = dynamic_cast<args_get_local *>(i->args.get());
         auto v = config->stack.pop();
         ASSERT(v.GetType() == STACK_UNIT_VALUE_TYPE, "non value type to be set local");
-        config->frame.local_list[ptr->data.data] = v.GetRef<Value>();
+        config->frame.local_list[ptr->data] = v.GetRef<Value>();
     }
 
     static void tee_local(Configuration * config, Instruction * i) {
@@ -954,7 +954,7 @@ public:
         auto ptr = dynamic_cast<args_get_local *>(i->args.get());
         auto v = config->stack.back();
         ASSERT(v.GetType() == STACK_UNIT_VALUE_TYPE, "non value type to be set local");
-        config->frame.local_list[ptr->data.data] = v.GetRef<Value>();
+        config->frame.local_list[ptr->data] = v.GetRef<Value>();
     }
 
     static void i32_const(Configuration * config, Instruction * i) {
@@ -1025,10 +1025,10 @@ public:
             config.set_frame(frame);
             auto r = config.exec().data[0];
             auto offset = r.to_i64();
-            auto table_addr = module_instance.table_addr_list[_element.table_index.data];
+            auto table_addr = module_instance.table_addr_list[_element.table_index];
             auto & table_instance = store.table_list[table_addr];
             for (auto index = 0; index < _element.init.size(); ++index) {
-                table_instance.element_list[offset + index] = _element.init[index].data;
+                table_instance.element_list[offset + index] = _element.init[index];
             }
         }
 
@@ -1039,7 +1039,7 @@ public:
             config.set_frame(frame);
             auto r = config.exec().data[0];
             auto offset = r.to_i64();
-            auto memory_addr = module_instance.memory_addr_list[_data.memory_index.data];
+            auto memory_addr = module_instance.memory_addr_list[_data.memory_index];
             auto & memory_instance = store.memory_list[memory_addr];
             for (auto b : _data.init) {
                 memory_instance.data[offset++] = b;
@@ -1091,25 +1091,25 @@ public:
         for (auto & _export : module.export_list) {
             // Variant<FunctionIndex, TableIndex, MemoryIndex, GlobalIndex> exportdesc;
             ExternValue extern_value{};
-            switch (_export.exportdesc.GetType()) {
+            switch (_export.type) {
             case 1: {
                 // FunctionIndex
-                auto addr = module_instance.function_addr_list[_export.exportdesc.GetConstRef<FunctionIndex>().data];
+                auto addr = module_instance.function_addr_list[_export.exportdesc];
                 extern_value = std::make_pair(0, addr);
                 break;
             }
             case 2: {
-                auto addr = module_instance.table_addr_list[_export.exportdesc.GetConstRef<TableIndex>().data];
+                auto addr = module_instance.table_addr_list[_export.exportdesc];
                 extern_value = std::make_pair(1, addr);
                 break;
             }
             case 3: {
-                auto addr = module_instance.memory_addr_list[_export.exportdesc.GetConstRef<MemoryIndex>().data];
+                auto addr = module_instance.memory_addr_list[_export.exportdesc];
                 extern_value = std::make_pair(2, addr);
                 break;
             }
             case 4: {
-                auto addr = module_instance.gloabl_addr_list[_export.exportdesc.GetConstRef<GlobalIndex>().data];
+                auto addr = module_instance.gloabl_addr_list[_export.exportdesc];
                 extern_value = std::make_pair(3, addr);
                 break;
             }
