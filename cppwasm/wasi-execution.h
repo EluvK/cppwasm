@@ -36,6 +36,8 @@ public:
         return newValue(INPUT_TYPE_I64, i);
     }
 
+    
+
     int32_t to_i32() {
         return I_decode(data);
     }
@@ -134,6 +136,13 @@ public:
     Function code;
 };
 
+class func_base{
+public:
+    virtual ~func_base(){}
+
+    virtual Result operator()(std::vector<Value> args, std::vector<ValueType> types) = 0;
+};
+using func_base_ptr = std::shared_ptr<func_base>;
 /**
  * @brief A host function is a function expressed outside WebAssembly but passed to a module as an import. The definition
  * and behavior of host functions are outside the scope of this specification. For the purpose of this
@@ -143,11 +152,15 @@ public:
  */
 class HostFunc {
 public:
-    HostFunc(FunctionType _type, bool _callable) : type{_type}, callable{_callable} {
+    HostFunc(FunctionType _type, func_base_ptr _callable) : type{_type}, callable{_callable} {
+    }
+
+    Result exec(std::vector<Value> function_args, std::vector<ValueType> args_type) const {
+        return callable->operator()(function_args, args_type);
     }
 
     FunctionType type;
-    bool callable{false};
+    func_base_ptr callable;
 };
 
 /**
@@ -279,7 +292,7 @@ public:
     // # For compatibility with older 0.4.x versions
     std::vector<MemoryInstance> & mems = memory_list;
 
-    FunctionAddress allocate_wasm_function(ModuleInstance module, Function function) {
+    FunctionAddress allocate_wasm_function(ModuleInstance module, Function const & function) {
         FunctionAddress function_address = function_list.size();
         FunctionType function_type = module.type_list[function.type_index.data];
         WasmFunc wasmfunc{function_type, module, function};

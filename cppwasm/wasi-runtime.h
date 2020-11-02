@@ -5,7 +5,7 @@
 class Runtime {
 public:
     // todo make bool->function.
-    Runtime(Module const & module, std::map<std::string, std::map<std::string, bool>> imps) {
+    Runtime(Module const & module, std::map<std::string, std::map<std::string, func_base_ptr>> & imps) {
         // todo check imp
 
         // todo import_list?

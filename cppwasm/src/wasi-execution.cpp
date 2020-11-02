@@ -12,7 +12,6 @@ Result Configuration::call(FunctionAddress function_addr, std::vector<Value> & f
         // WASM func
         auto const & func = function.GetConstRef<WasmFunc>();
         auto const & value_type_vec = func.code.local_list;
-        xdbg("func code size: %d", func.code.expr.data.size());
         for (auto const & _value_type : value_type_vec) {
             function_args.push_back(Value::newValue(_value_type, 0));
         }
@@ -22,6 +21,16 @@ Result Configuration::call(FunctionAddress function_addr, std::vector<Value> & f
     }
     case 2: {
         // LOCAL func
+        auto const & host_func = function.GetConstRef<HostFunc>();
+        // auto func_class = host_func.callable;
+        auto const & args_type = host_func.type.args.data;
+        // for (auto p : args_type)
+        //     xdbg("0x%02x", p);
+        // for(auto p: function_args)
+        //     xdbg("0x%02x", p.to_i32());
+        auto r = host_func.exec(function_args, args_type);
+        // auto const & type = func.type.rets.data;
+        return r;
     }
     default:
         xerror("cppwasm: unknow function type %d", function.GetType());
