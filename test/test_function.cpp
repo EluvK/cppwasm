@@ -8,8 +8,8 @@ TEST(test_, add_1) {
     Module mod{file_path};
     std::map<std::string, std::map<std::string, host_func_base_ptr>> imps;
     Runtime runtime{mod, imps};
-    ASSERT_EQ(runtime.exec("add", {1, 2}).data[0].to_i64(),3);
-    ASSERT_EQ(runtime.exec("add", {100, 200}).data[0].to_i64(),300);
+    ASSERT_EQ(runtime.exec("add", {1, 2}).data[0].to_i64(), 3);
+    ASSERT_EQ(runtime.exec("add", {100, 200}).data[0].to_i64(), 300);
 }
 
 TEST(test_, fib_1) {
@@ -32,4 +32,5 @@ TEST(test_, mul_1) {
     ASSERT_EQ(runtime.exec("add", {-12, 20012}).data[0].to_i32(), 20000);
     ASSERT_EQ(runtime.exec("zero", {}).data[0].to_i32(), 0);
     ASSERT_EQ(runtime.exec("fib", {10}).data[0].to_i32(), 55);
+    ASSERT_EQ(runtime.exec("minus", {123456, 456}).data[0].to_i32(), 123000);
 }

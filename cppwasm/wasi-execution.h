@@ -63,7 +63,7 @@ public:
     double to_f64() {
         return f64_data;
     }
-    std::string to_string(){
+    std::string to_string() {
         return str_data;
     }
 
@@ -157,9 +157,9 @@ public:
 };
 
 /**
- * @brief Any internal method should inherit this class and implement its function in the overloaded operator(). 
+ * @brief Any internal method should inherit this class and implement its function in the overloaded operator().
  */
-class host_func_base{
+class host_func_base {
 public:
     virtual Result operator()(std::vector<Value> args, std::vector<ValueType> types) = 0;
 };
@@ -528,6 +528,7 @@ public:
         switch (i->opcode) {
         case instruction::unreachable:
         case instruction::nop:
+            xerror("cppwasm: not support nop && unreachable");
         case instruction::block:
             block(config, i);
             break;
@@ -574,6 +575,8 @@ public:
             set_local(config, i);
             break;
         case instruction::tee_local:
+            tee_local(config, i);
+            break;
         case instruction::get_global:
         case instruction::set_global:
         case instruction::i32_load:
@@ -656,8 +659,13 @@ public:
             i32_add(config, i);
             break;
         case instruction::i32_sub:
+            i32_sub(config, i);
+            break;
         case instruction::i32_mul:
+            i32_mul(config, i);
+            break;
         case instruction::i32_divs:
+            i32_divs(config, i);
         case instruction::i32_divu:
         case instruction::i32_rems:
         case instruction::i32_remu:
@@ -978,6 +986,13 @@ public:
         config->frame.local_list[ptr->data] = v.GetRef<Value>();
     }
 
+    static void get_global(Configuration * config, Instruction * i) {
+    }
+
+    static void set_global(Configuration * config, Instruction * i) {
+    }
+    //..........
+
     static void i32_const(Configuration * config, Instruction * i) {
         xdbg("instruction: i32_const");
         config->stack.append(Value::from_i32(dynamic_cast<args_i32_count *>(i->args.get())->data));
@@ -993,9 +1008,36 @@ public:
 
     static void i32_add(Configuration * config, Instruction * i) {
         xdbg("instruction: i32_add");
-        auto a = config->stack.pop().GetRef<Value>().to_i32();
         auto b = config->stack.pop().GetRef<Value>().to_i32();
+        auto a = config->stack.pop().GetRef<Value>().to_i32();
         auto c = Value::from_i32(a + b);
+        config->stack.append(c);
+    }
+
+    static void i32_sub(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_sub");
+        auto b = config->stack.pop().GetRef<Value>().to_i32();
+        auto a = config->stack.pop().GetRef<Value>().to_i32();
+        auto c = Value::from_i32(a - b);
+        config->stack.append(c);
+    }
+
+    static void i32_mul(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_mul");
+        auto b = config->stack.pop().GetRef<Value>().to_i32();
+        auto a = config->stack.pop().GetRef<Value>().to_i32();
+        auto c = Value::from_i32(a * b);
+        config->stack.append(c);
+    }
+
+    static void i32_divs(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_divs");
+        auto b = config->stack.pop().GetRef<Value>().to_i32();
+        auto a = config->stack.pop().GetRef<Value>().to_i32();
+        // todo ? exception
+        if (b == 0)
+            xerror("cppwasm : integer divide by zero");
+        auto c = Value::from_i32(a / b);
         config->stack.append(c);
     }
 };
