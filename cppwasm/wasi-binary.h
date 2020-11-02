@@ -102,7 +102,7 @@ static LocalIndex GetLocalIndex(byte_IO & BinaryIO) {
     return LocalIndex{U_decode_reader(BinaryIO)};
 }
 
-// todo  may remove class? using LabelIndex = byte? other index?
+// (delete)  may remove class? using LabelIndex = byte? other index?
 // class LabelIndex {
 // public:
 //     LabelIndex() {
@@ -1135,7 +1135,6 @@ public:
         }
         printf("\n");
         res.func = Func::GetFunc(code_bytes);
-        // todo add assert
         ASSERT(code_bytes.empty(), "should be empty to be get all code.");
         return res;
     }

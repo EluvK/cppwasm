@@ -25,7 +25,3 @@
         }                                                                                                                                                                          \
     }
 
-
-// todo be in cmake?
-#define MANGLE_TABLE_INDEX true
-
