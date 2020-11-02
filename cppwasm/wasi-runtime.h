@@ -50,7 +50,9 @@ public:
     }
 
     FunctionAddress func_addr(std::string name) {
+        // xdbg("find_function_index: %s", name.c_str());
         for (auto _export : machine.module_instance.export_list) {
+            // xdbg(" list name: %s [%d, %d]", _export.name.c_str(), _export.value.first, _export.value.second);
             if (_export.name == name && _export.value.first == FUNCTION_EXT_INDEX) {
                 return _export.value.second;
             }
@@ -71,16 +73,16 @@ public:
         std::vector<Value> v_args{};
         for(auto &a:args){
             switch(a.GetType()){
-                case INPUT_TYPE_I64:{
+                case TYPE_I64:{
                     xdbg("Get Value I64 %d", a.GetConstRef<int64_t>());
                     v_args.push_back(Value(a.GetConstRef<int64_t>()));
                     break;
                 }
-                case INPUT_TYPE_F64:{
+                case TYPE_F64:{
                     v_args.push_back(Value(a.GetConstRef<double>()));
                     break;
                 }
-                case INPUT_TYPE_STR:{
+                case TYPE_STR:{
                     v_args.push_back(Value(a.GetConstRef<std::string>()));
                     break;
                 }

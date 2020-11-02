@@ -39,10 +39,10 @@ public:
     byte_vec data;
 };
 
-static byte TYPE_i32 = 0x7f;
-static byte TYPE_i64 = 0x7e;
-static byte TYPE_f32 = 0x7d;
-static byte TYPE_f64 = 0x7c;
+// static byte TYPE_i32 = 0x7f;
+// static byte TYPE_i64 = 0x7e;
+// static byte TYPE_f32 = 0x7d;
+// static byte TYPE_f64 = 0x7c;
 
 // IMPORTANT
 #define CUSTOM_SECTION_INDEX 0x00

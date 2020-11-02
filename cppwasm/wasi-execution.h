@@ -5,51 +5,63 @@
 #include "wasi-binary.h"
 
 using InputType = Variant<int64_t, double, std::string>;
-#define INPUT_TYPE_I64 1
-#define INPUT_TYPE_F64 2
-#define INPUT_TYPE_STR 3
+#define TYPE_I64 1
+#define TYPE_F64 2
+#define TYPE_STR 3
 
 class Value {
 public:
     Value() {
     }
-    Value(int64_t i64) : data{I_encode(i64)}, type{TYPE_i64} {
+    Value(int64_t i64) : i64_data{i64}, type{TYPE_I64} {
     }
-    Value(double f64) {
+    Value(double f64) : f64_data(f64), type{TYPE_F64} {
     }
     Value(std::string str) : str_data{str} {
     }
-    Value(byte _data) : data{_data} {
-    }
-    Value(byte _type, byte_vec _data) {
-        type = _type;
-        data = _data;
-    }
+    // Value(byte _data) : data{_data} {
+    // }
+    // Value(byte _type, byte_vec _data) {
+    //     type = _type;
+    //     data = _data;
+    // }
     static Value newValue(ValueType type, InputType data) {
         switch (data.GetType()) {
-        case INPUT_TYPE_I64:
+        case TYPE_I64:
             return Value(data.GetConstRef<int64_t>());
-        case INPUT_TYPE_F64:
+        case TYPE_F64:
             return Value(data.GetConstRef<double>());
         default:
             xerror("cppwasm unknow input type");
         }
     }
     static Value from_i32(int32_t i) {
-        return newValue(INPUT_TYPE_I64, i);
+        return newValue(TYPE_I64, i);
     }
-
-    
+    static Value from_i64(int64_t i) {
+        return newValue(TYPE_I64, i);
+    }
+    static Value from_f32(float f) {
+        return newValue(TYPE_F64, f);
+    }
+    static Value from_f64(float f) {
+        return newValue(TYPE_F64, f);
+    }
+    static Value from_str(std::string str) {
+        return newValue(TYPE_STR, str);
+    }
 
     int32_t to_i32() {
-        return I_decode(data);
+        return static_cast<int32_t>(i64_data);
     }
     int64_t to_i64() {
-        return I_decode(data);
+        return i64_data;
     }
     float to_f32() {
+        return static_cast<float>(f64_data);
     }
     double to_f64() {
+        return f64_data;
     }
     std::string to_string(){
         return str_data;
@@ -57,8 +69,9 @@ public:
 
 private:
     byte type;
-    byte_vec data;
-    std::string str_data;
+    int64_t i64_data;
+    double f64_data;
+    std::string str_data{};
 };
 
 class Result {
@@ -1100,23 +1113,24 @@ public:
             // Variant<FunctionIndex, TableIndex, MemoryIndex, GlobalIndex> exportdesc;
             ExternValue extern_value{};
             switch (_export.type) {
-            case 1: {
+            case EXPORT_TYPE_FUNC: {
                 // FunctionIndex
+                xdbg(" GET export_ name:%s  type:%d  index:%d", _export.name.c_str(), _export.type, _export.exportdesc);
                 auto addr = module_instance.function_addr_list[_export.exportdesc];
                 extern_value = std::make_pair(0, addr);
                 break;
             }
-            case 2: {
+            case EXPORT_TYPE_TABLE: {
                 auto addr = module_instance.table_addr_list[_export.exportdesc];
                 extern_value = std::make_pair(1, addr);
                 break;
             }
-            case 3: {
+            case EXPORT_TYPE_MEMORY: {
                 auto addr = module_instance.memory_addr_list[_export.exportdesc];
                 extern_value = std::make_pair(2, addr);
                 break;
             }
-            case 4: {
+            case EXPORT_TYPE_GLOBAL: {
                 auto addr = module_instance.gloabl_addr_list[_export.exportdesc];
                 extern_value = std::make_pair(3, addr);
                 break;

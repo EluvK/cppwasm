@@ -827,7 +827,6 @@ public:
             Instruction ins = Instruction::GetInstruction(BinaryIO);
             exp.data.push_back(ins);
             // xdbg(" GETexpression: ins: opcode:0x%02x", ins.opcode);
-            printf("0x%02x,", ins.opcode);
             switch (ins.opcode) {
             case instruction::block:
             case instruction::loop:
@@ -903,6 +902,10 @@ public:
     std::vector<Global> data;
 };
 
+#define EXPORT_TYPE_FUNC 0
+#define EXPORT_TYPE_TABLE 1
+#define EXPORT_TYPE_MEMORY 2
+#define EXPORT_TYPE_GLOBAL 3
 /**
  * @brief The exports component of a module defines a set of exports that become accessible to the host environment once the module has been instantiated.
  * export ::= {name name, desc exportdesc}
@@ -930,21 +933,22 @@ public:
             // extern_table = 0x01
             // extern_memory = 0x02
             // extern_global = 0x03
-        case 0:
+        case EXPORT_TYPE_FUNC:
             res.exportdesc = GetFunctionIndex(BinaryIO);
             break;
-        case 1:
+        case EXPORT_TYPE_TABLE:
             res.exportdesc = GetTableIndex(BinaryIO);
             break;
-        case 2:
+        case EXPORT_TYPE_MEMORY:
             res.exportdesc = GetMemoryIndex(BinaryIO);
             break;
-        case 3:
+        case EXPORT_TYPE_GLOBAL:
             res.exportdesc = GetGlobalIndex(BinaryIO);
             break;
         default:
             xerror("cppwasm : something bug ? %d", res.type);
         }
+        xdbg(" export_ name:%s  type:%d  index:%d", res.name.c_str(), res.type, res.exportdesc);
         return res;
     }
     std::string name;
@@ -971,6 +975,7 @@ public:
     static ExportSection GetExportSection(byte_IO & BinaryIO) {
         ExportSection res{};
         uint64_t size = U_decode_reader(BinaryIO);
+        xdbg("export_section size",size);
         for (auto index = 0; index < size; ++index) {
             res.data.push_back(Export::GetExport(BinaryIO));
         }
@@ -1131,6 +1136,7 @@ public:
         res.size = U_decode_reader(BinaryIO);
         byte_IO code_bytes{BinaryIO.read(res.size)};
         // ! for debug
+        // printf("size: 0x%02x ", res.size);
         for (auto _b : code_bytes.data) {
             printf("0x%02x ", _b);
         }
