@@ -47,7 +47,7 @@ Result Configuration::exec() {
     while (pc < size) {
         Instruction * i = &instruction_list[pc];
         ArithmeticLogicUnit::exec(this, i);
-        xdbg("PC: %d", pc);
+        // xdbg("PC: %d", pc);
         pc += 1;
     }
     auto _arity = frame.arity;

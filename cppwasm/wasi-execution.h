@@ -148,11 +148,11 @@ public:
 
 class WasmFunc {
 public:
-    WasmFunc(FunctionType _type, ModuleInstance _module, Function _code) : type{_type}, module{_module}, code{_code} {
+    WasmFunc(FunctionType _type, std::shared_ptr<ModuleInstance> _module, Function _code) : type{_type}, module{_module}, code{_code} {
     }
 
     FunctionType type;
-    ModuleInstance module;
+    std::shared_ptr<ModuleInstance> module;
     Function code;
 };
 
@@ -261,7 +261,7 @@ public:
         }
 
         size += n;
-        data.reserve(size * 65536);  // todo make it static const memory_page_size;
+        data.resize(size * 65536);  // todo make it static const memory_page_size;
     }
 };
 
@@ -313,9 +313,9 @@ public:
     // # For compatibility with older 0.4.x versions
     std::vector<MemoryInstance> & mems = memory_list;
 
-    FunctionAddress allocate_wasm_function(ModuleInstance module, Function const & function) {
+    FunctionAddress allocate_wasm_function(std::shared_ptr<ModuleInstance> module, Function const & function) {
         FunctionAddress function_address = function_list.size();
-        FunctionType function_type = module.type_list[function.type_index];
+        FunctionType function_type = module->type_list[function.type_index];
         WasmFunc wasmfunc{function_type, module, function};
         function_list.push_back(wasmfunc);
         return function_address;
@@ -379,10 +379,10 @@ class Frame {
 public:
     Frame() {
     }
-    Frame(ModuleInstance _module, std::vector<Value> _local_list, Expression _expr, int64_t _arity) : module{_module}, local_list{_local_list}, expr{_expr}, arity{_arity} {
+    Frame(std::shared_ptr<ModuleInstance> _module, std::vector<Value> _local_list, Expression _expr, int64_t _arity) : module{_module}, local_list{_local_list}, expr{_expr}, arity{_arity} {
     }
 
-    ModuleInstance module;
+    std::shared_ptr<ModuleInstance> module;
     std::vector<Value> local_list;
     Expression expr;
     int64_t arity;
@@ -579,8 +579,14 @@ public:
             break;
         case instruction::get_global:
         case instruction::set_global:
+            xdbg("instruction: 0x%02x", i->opcode);
+            break;
         case instruction::i32_load:
+            i32_load(config, i);
+            break;
         case instruction::i64_load:
+            i64_load(config, i);
+            break;
         case instruction::f32_load:
         case instruction::f64_load:
         case instruction::i32_load8_s:
@@ -593,10 +599,19 @@ public:
         case instruction::i64_load16_u:
         case instruction::i64_load32_s:
         case instruction::i64_load32_u:
+            xdbg("instruction: 0x%02x", i->opcode);
+            break;
         case instruction::i32_store:
+            i32_store(config, i);
+            break;
         case instruction::i64_store:
+            i64_store(config,i);
+            break;
         case instruction::f32_store:
+            xerror("false");
         case instruction::f64_store:
+            f64_store(config,i);
+            break;
         case instruction::i32_store8:
         case instruction::i32_store16:
         case instruction::i64_store8:
@@ -965,9 +980,9 @@ public:
     }
 
     static void get_local(Configuration * config, Instruction * i) {
-        xdbg("instruction: get_local");
         auto ptr = dynamic_cast<args_get_local *>(i->args.get());
         config->stack.append(config->frame.local_list[ptr->data]);
+        xdbg("instruction: get_local %d", config->stack.back().GetRef<Value>().to_i32());
     }
 
     static void set_local(Configuration * config, Instruction * i) {
@@ -993,9 +1008,107 @@ public:
     }
     //..........
 
-    static void i32_const(Configuration * config, Instruction * i) {
-        xdbg("instruction: i32_const");
+    static void mem_load(Configuration * config, Instruction * i, int64_t size) {
+        
+    }
+
+    static void i32_load(Configuration * config, Instruction * i) {
+        auto size = 4;
+        auto memory_addr = config->frame.module->memory_addr_list[0];
+        auto memory = config->store.memory_list[memory_addr];
+        auto offset = dynamic_cast<args_load_store *>(i->args.get())->data.second;
+        auto addr = config->stack.pop().GetRef<Value>().to_i32() + offset;
+        xdbg("instruction: i32_load  addr:%d offset:%d",addr,offset);
+        if (addr < 0 || addr + size > memory.data.size()) {
+            // todo  make it exception.
+            xerror("cppwasm: out of bounds memory access");
+        }
+        byte_vec bv(memory.data.begin() + addr, memory.data.begin() + addr + size);
+        Value r{I_decode(bv)};
+        xdbg("         - : load val into stack: %d", r.to_i32());
+        config->stack.append(r);
+    }
+
+    static void i64_load(Configuration * config, Instruction * i) {
+        auto size = 8;
+        auto memory_addr = config->frame.module->memory_addr_list[0];
+        auto memory = config->store.memory_list[memory_addr];
+        auto offset = dynamic_cast<args_load_store *>(i->args.get())->data.second;
+        auto addr = config->stack.pop().GetRef<Value>().to_i32() + offset;
+        xdbg("instruction: i64_load  addr:%d offset:%d",addr,offset);
+        if (addr < 0 || addr + size > memory.data.size()) {
+            // todo  make it exception.
+            xerror("cppwasm: out of bounds memory access");
+        }
+        byte_vec bv(memory.data.begin() + addr, memory.data.begin() + addr + size);
+        Value r{I_decode(bv)};
+        config->stack.append(r);
+    }
+
+    static void mem_store(Configuration * config, Instruction * i, int64_t size) {
+    }
+
+    static void i32_store(Configuration * config, Instruction * i) {
+        auto size = 4;
+        auto r = config->stack.pop();
+
+        auto memory_addr = config->frame.module->memory_addr_list[0];
+        auto memory = config->store.memory_list[memory_addr];
+        
+        auto offset = dynamic_cast<args_load_store *>(i->args.get())->data.second;
+        auto addr = config->stack.pop().GetRef<Value>().to_i32() + offset;
+        xdbg("instruction: i32_store  addr:%d offset:%d",addr,offset);
+        if (addr < 0 || addr + size > memory.data.size()) {
+            // todo  make it exception.
+            xerror("cppwasm: out of bounds memory access");
+        }
+        auto & mem = memory.data;
+        auto data = I_encode(r.GetRef<Value>().to_i32());
+        mem.insert(mem.begin() + addr, data.begin(), data.begin() + size);
+    }
+
+    static void i64_store(Configuration * config, Instruction * i) {
+        auto size = 8;
+        auto r = config->stack.pop();
+
+        auto memory_addr = config->frame.module->memory_addr_list[0];
+        auto memory = config->store.memory_list[memory_addr];
+        
+        auto offset = dynamic_cast<args_load_store *>(i->args.get())->data.second;
+        auto addr = config->stack.pop().GetRef<Value>().to_i32() + offset;
+        xdbg("instruction: i64_store  addr:%d offset:%d",addr,offset);
+        if (addr < 0 || addr + size > memory.data.size()) {
+            // todo  make it exception.
+            xerror("cppwasm: out of bounds memory access");
+        }
+        auto & mem = memory.data;
+        auto data = I_encode(r.GetRef<Value>().to_i64());
+        mem.insert(mem.begin() + addr, data.begin(), data.begin() + size);
+    }
+
+    static void f64_store(Configuration * config, Instruction * i) {
+        auto size = 8;
+        auto r = config->stack.pop();
+
+        auto memory_addr = config->frame.module->memory_addr_list[0];
+        auto memory = config->store.memory_list[memory_addr];
+        
+        auto offset = dynamic_cast<args_load_store *>(i->args.get())->data.second;
+        auto addr = config->stack.pop().GetRef<Value>().to_i32() + offset;
+        xdbg("instruction: f64_store  addr:%d offset:%d",addr,offset);
+        if (addr < 0 || addr + size > memory.data.size()) {
+            // todo  make it exception.
+            xerror("cppwasm: out of bounds memory access");
+        }
+        auto & mem = memory.data;
+        // todo check tofloat
+        auto data = I_encode(r.GetRef<Value>().to_f64());
+        mem.insert(mem.begin() + addr, data.begin(), data.begin() + size);
+    }
+
+    static void i32_const(Configuration * config, Instruction * i) {;
         config->stack.append(Value::from_i32(dynamic_cast<args_i32_count *>(i->args.get())->data));
+        xdbg("instruction: i32_const %d",config->stack.back().GetRef<Value>().to_i32())
     }
 
     static void i32_ges(Configuration * config, Instruction * i) {
@@ -1007,17 +1120,17 @@ public:
     }
 
     static void i32_add(Configuration * config, Instruction * i) {
-        xdbg("instruction: i32_add");
         auto b = config->stack.pop().GetRef<Value>().to_i32();
         auto a = config->stack.pop().GetRef<Value>().to_i32();
+        xdbg("instruction: i32_add [%d + %d = %d]", a, b, a + b);
         auto c = Value::from_i32(a + b);
         config->stack.append(c);
     }
 
     static void i32_sub(Configuration * config, Instruction * i) {
-        xdbg("instruction: i32_sub");
         auto b = config->stack.pop().GetRef<Value>().to_i32();
         auto a = config->stack.pop().GetRef<Value>().to_i32();
+        xdbg("instruction: i32_sub [%d - %d = %d]", a, b, a - b);
         auto c = Value::from_i32(a - b);
         config->stack.append(c);
     }
@@ -1051,12 +1164,19 @@ public:
 class Machine {
 public:
     Machine() {
+        module_instance = std::make_shared<ModuleInstance>();
     }
-    ModuleInstance module_instance{};
+    ~Machine() {
+        if (module_instance != nullptr) {
+            module_instance.reset();
+        }
+    }
+    std::shared_ptr<ModuleInstance> module_instance;
+    // ModuleInstance module_instance{};
     Store store{};
 
     void instantiate(Module const & module, std::vector<ExternValue> extern_value_list) {
-        module_instance.type_list = module.type_list;
+        module_instance->type_list = module.type_list;
 
         // todo more check
 
@@ -1071,7 +1191,8 @@ public:
         }
         for (auto & _global : module.global_list) {
             xdbg("init global value");
-            Frame frame{aux, {}, _global.expr, 1};
+            // todo check this shared ptr liveness
+            Frame frame{std::make_shared<ModuleInstance>(aux), {}, _global.expr, 1};
             Configuration config{store};
             config.set_frame(frame);
             auto r = config.exec().data[0];
@@ -1088,7 +1209,7 @@ public:
             config.set_frame(frame);
             auto r = config.exec().data[0];
             auto offset = r.to_i64();
-            auto table_addr = module_instance.table_addr_list[_element.table_index];
+            auto table_addr = module_instance->table_addr_list[_element.table_index];
             auto & table_instance = store.table_list[table_addr];
             for (auto index = 0; index < _element.init.size(); ++index) {
                 table_instance.element_list[offset + index] = _element.init[index];
@@ -1102,13 +1223,12 @@ public:
             config.set_frame(frame);
             auto r = config.exec().data[0];
             auto offset = r.to_i64();
-            auto memory_addr = module_instance.memory_addr_list[_data.memory_index];
+            auto memory_addr = module_instance->memory_addr_list[_data.memory_index];
             auto & memory_instance = store.memory_list[memory_addr];
             for (auto b : _data.init) {
                 memory_instance.data[offset++] = b;
             }
         }
-
         // todo run start?
     }
 
@@ -1117,33 +1237,34 @@ public:
         for (auto p : extern_value_list) {
             switch (p.first) {
             case FUNCTION_EXT_INDEX:
-                module_instance.function_addr_list.push_back(p.second);
+                module_instance->function_addr_list.push_back(p.second);
                 break;
             case TABLE_EXT_INDEX:
-                module_instance.table_addr_list.push_back(p.second);
+                module_instance->table_addr_list.push_back(p.second);
                 break;
             case MEMORY_EXT_INDEX:
-                module_instance.memory_addr_list.push_back(p.second);
+                module_instance->memory_addr_list.push_back(p.second);
                 break;
             case GLOBAL_EXT_INDEX:
-                module_instance.gloabl_addr_list.push_back(p.second);
+                module_instance->gloabl_addr_list.push_back(p.second);
                 break;
             }
         }
 
         for (auto & _function : module.function_list) {
             auto function_addr = store.allocate_wasm_function(module_instance, _function);
-            module_instance.function_addr_list.push_back(function_addr);
+            module_instance->function_addr_list.push_back(function_addr);
         }
 
         for (auto & _table : module.table_list) {
             auto table_addr = store.allocate_table(_table.type);
-            module_instance.table_addr_list.push_back(table_addr);
+            module_instance->table_addr_list.push_back(table_addr);
         }
 
         for (auto & _memory : module.memory_list) {
             auto memory_addr = store.allocate_memory(_memory.type);
-            module_instance.memory_addr_list.push_back(memory_addr);
+            module_instance->memory_addr_list.push_back(memory_addr);
+            xdbg("size: %d type: %d val:%d", module_instance->memory_addr_list.size(), _memory.type, memory_addr);
         }
 
         for (auto index = 0; index < module.global_list.size(); ++index) {
@@ -1157,29 +1278,32 @@ public:
             switch (_export.type) {
             case EXPORT_TYPE_FUNC: {
                 // FunctionIndex
-                xdbg(" GET export_ name:%s  type:%d  index:%d", _export.name.c_str(), _export.type, _export.exportdesc);
-                auto addr = module_instance.function_addr_list[_export.exportdesc];
+                xdbg(" GET export_func name:%s  type:%d  index:%d", _export.name.c_str(), _export.type, _export.exportdesc);
+                auto addr = module_instance->function_addr_list[_export.exportdesc];
                 extern_value = std::make_pair(0, addr);
                 break;
             }
             case EXPORT_TYPE_TABLE: {
-                auto addr = module_instance.table_addr_list[_export.exportdesc];
+                xdbg(" GET export_table name:%s  type:%d  index:%d", _export.name.c_str(), _export.type, _export.exportdesc);
+                auto addr = module_instance->table_addr_list[_export.exportdesc];
                 extern_value = std::make_pair(1, addr);
                 break;
             }
             case EXPORT_TYPE_MEMORY: {
-                auto addr = module_instance.memory_addr_list[_export.exportdesc];
+                xdbg(" GET export_memory name:%s  type:%d  index:%d", _export.name.c_str(), _export.type, _export.exportdesc);
+                auto addr = module_instance->memory_addr_list[_export.exportdesc];
                 extern_value = std::make_pair(2, addr);
                 break;
             }
             case EXPORT_TYPE_GLOBAL: {
-                auto addr = module_instance.gloabl_addr_list[_export.exportdesc];
+                xdbg(" GET export_global name:%s  type:%d  index:%d", _export.name.c_str(), _export.type, _export.exportdesc);
+                auto addr = module_instance->gloabl_addr_list[_export.exportdesc];
                 extern_value = std::make_pair(3, addr);
                 break;
             }
             }
             auto export_inst = ExportInstance{_export.name, extern_value};
-            module_instance.export_list.push_back(export_inst);
+            module_instance->export_list.push_back(export_inst);
         }
     }
 

@@ -398,6 +398,13 @@ public:
 };
 using args_ptr = std::shared_ptr<instruction_args_base>;
 
+class args_load_store : public instruction_args_base {
+public:
+    args_load_store(std::pair<byte, byte> pi) : data{pi} {
+    }
+
+    std::pair<byte, byte> data;
+};
 //--------------
 
 /**
@@ -490,7 +497,14 @@ public:
         case instruction::i32_store16:
         case instruction::i64_store8:
         case instruction::i64_store16:
-        case instruction::i64_store32:
+        case instruction::i64_store32: {
+            auto _f = U_decode_reader(BinaryIO);
+            auto _s = U_decode_reader(BinaryIO);
+            auto pi = std::make_pair(_f, _s);
+            // xdbg("%02x %02x", pi.first, pi.second);
+            o.args = std::make_shared<args_load_store>(pi);
+            break;
+        }
 
         case instruction::current_memory:
         case instruction::grow_memory:

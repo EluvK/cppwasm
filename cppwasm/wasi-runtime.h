@@ -51,7 +51,7 @@ public:
 
     FunctionAddress func_addr(std::string name) {
         // xdbg("find_function_index: %s", name.c_str());
-        for (auto _export : machine.module_instance.export_list) {
+        for (auto _export : machine.module_instance->export_list) {
             // xdbg(" list name: %s [%d, %d]", _export.name.c_str(), _export.value.first, _export.value.second);
             if (_export.name == name && _export.value.first == FUNCTION_EXT_INDEX) {
                 return _export.value.second;
