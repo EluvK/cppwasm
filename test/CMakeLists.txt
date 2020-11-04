@@ -8,6 +8,8 @@ add_compile_options(-std=c++11 -pthread -g  -ggdb -O0 -w -fstack-protector-all -
 aux_source_directory(. wasi_test_src)
 
 add_executable(wasi_test ${wasi_test_src})
+
+# add_executable(wasi_test ./test_simple.cpp)
 add_dependencies(wasi_test wasi)
 target_link_libraries(wasi_test PRIVATE wasi gtest gtest_main pthread)
 

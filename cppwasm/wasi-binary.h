@@ -510,12 +510,12 @@ public:
         case instruction::grow_memory:
 
             xdbg("unknow instruction: 0x%02x", o.opcode);
-        case instruction::i32_const: {
+        case instruction::i32_const:
+        case instruction::i64_const: {
             auto i32 = I_decode_reader(BinaryIO);
             o.args = std::make_shared<args_i32_count>(i32);
             break;
         }
-        case instruction::i64_const:
 
         case instruction::f32_const:
 

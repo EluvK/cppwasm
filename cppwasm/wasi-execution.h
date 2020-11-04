@@ -51,6 +51,10 @@ public:
         return newValue(TYPE_STR, str);
     }
 
+    uint32_t to_u32() {
+        return static_cast<uint32_t>(i64_data);
+    }
+
     int32_t to_i32() {
         return static_cast<int32_t>(i64_data);
     }
@@ -379,7 +383,8 @@ class Frame {
 public:
     Frame() {
     }
-    Frame(std::shared_ptr<ModuleInstance> _module, std::vector<Value> _local_list, Expression _expr, int64_t _arity) : module{_module}, local_list{_local_list}, expr{_expr}, arity{_arity} {
+    Frame(std::shared_ptr<ModuleInstance> _module, std::vector<Value> _local_list, Expression _expr, int64_t _arity)
+      : module{_module}, local_list{_local_list}, expr{_expr}, arity{_arity} {
     }
 
     std::shared_ptr<ModuleInstance> module;
@@ -490,10 +495,10 @@ static bool match_memory(MemoryType a, MemoryType b) {
 // todo complete it.
 class Configuration {
 public:
-    Configuration(Store _store) : store{_store} {
+    Configuration(std::shared_ptr<Store> _store) : store{_store} {
     }
 
-    Store store;
+    std::shared_ptr<Store> store;
     Frame frame;
     Stack stack{};
     int64_t depth{0};
@@ -605,12 +610,12 @@ public:
             i32_store(config, i);
             break;
         case instruction::i64_store:
-            i64_store(config,i);
+            i64_store(config, i);
             break;
         case instruction::f32_store:
             xerror("false");
         case instruction::f64_store:
-            f64_store(config,i);
+            f64_store(config, i);
             break;
         case instruction::i32_store8:
         case instruction::i32_store16:
@@ -625,6 +630,8 @@ public:
             i32_const(config, i);
             break;
         case instruction::i64_const:
+            i64_const(config, i);
+            break;
         case instruction::f32_const:
         case instruction::f64_const:
         case instruction::i32_eqz:
@@ -703,9 +710,17 @@ public:
         case instruction::i64_rems:
         case instruction::i64_remu:
         case instruction::i64_and:
+            xdbg("instruction: 0x%02x", i->opcode);
+            break;
         case instruction::i64_or:
+            i64_or(config, i);
+            break;
         case instruction::i64_xor:
+            xdbg("instruction: 0x%02x", i->opcode);
+            break;
         case instruction::i64_shl:
+            i64_shl(config, i);
+            break;
         case instruction::i64_shrs:
         case instruction::i64_shru:
         case instruction::i64_rotl:
@@ -744,7 +759,11 @@ public:
         case instruction::i32_trunc_sf64:
         case instruction::i32_trunc_uf64:
         case instruction::i64_extend_si32:
+            xdbg("instruction: 0x%02x", i->opcode);
+            break;
         case instruction::i64_extend_ui32:
+            i64_extend_ui32(config, i);
+            break;
         case instruction::i64_trunc_sf32:
         case instruction::i64_trunc_uf32:
         case instruction::i64_trunc_sf64:
@@ -931,7 +950,7 @@ public:
             xerror("cppwasm: call stack exhausted");
         }
 
-        FunctionInstance function = config->store.function_list[function_addr];
+        FunctionInstance function = config->store->function_list[function_addr];
         // auto func_type = function.GetRef<>
         FunctionType func_type{};
         if (function.GetType() == FUNCTION_INSTANCE_HOST) {
@@ -1009,16 +1028,15 @@ public:
     //..........
 
     static void mem_load(Configuration * config, Instruction * i, int64_t size) {
-        
     }
 
     static void i32_load(Configuration * config, Instruction * i) {
-        auto size = 4;
+        std::size_t size = 4;
         auto memory_addr = config->frame.module->memory_addr_list[0];
-        auto memory = config->store.memory_list[memory_addr];
+        auto const & memory = config->store->memory_list[memory_addr];
         auto offset = dynamic_cast<args_load_store *>(i->args.get())->data.second;
         auto addr = config->stack.pop().GetRef<Value>().to_i32() + offset;
-        xdbg("instruction: i32_load  addr:%d offset:%d",addr,offset);
+        xdbg("instruction: i32_load  addr:%d offset:%d", addr, offset);
         if (addr < 0 || addr + size > memory.data.size()) {
             // todo  make it exception.
             xerror("cppwasm: out of bounds memory access");
@@ -1030,12 +1048,12 @@ public:
     }
 
     static void i64_load(Configuration * config, Instruction * i) {
-        auto size = 8;
+        std::size_t size = 8;
         auto memory_addr = config->frame.module->memory_addr_list[0];
-        auto memory = config->store.memory_list[memory_addr];
+        auto const & memory = config->store->memory_list[memory_addr];
         auto offset = dynamic_cast<args_load_store *>(i->args.get())->data.second;
         auto addr = config->stack.pop().GetRef<Value>().to_i32() + offset;
-        xdbg("instruction: i64_load  addr:%d offset:%d",addr,offset);
+        xdbg("instruction: i64_load  addr:%d offset:%d", addr, offset);
         if (addr < 0 || addr + size > memory.data.size()) {
             // todo  make it exception.
             xerror("cppwasm: out of bounds memory access");
@@ -1049,53 +1067,61 @@ public:
     }
 
     static void i32_store(Configuration * config, Instruction * i) {
-        auto size = 4;
+        std::size_t size = 4;
         auto r = config->stack.pop();
 
         auto memory_addr = config->frame.module->memory_addr_list[0];
-        auto memory = config->store.memory_list[memory_addr];
-        
+        auto & memory = config->store->memory_list[memory_addr];
         auto offset = dynamic_cast<args_load_store *>(i->args.get())->data.second;
         auto addr = config->stack.pop().GetRef<Value>().to_i32() + offset;
-        xdbg("instruction: i32_store  addr:%d offset:%d",addr,offset);
+        xdbg("instruction: i32_store  addr:%d offset:%d", addr, offset);
         if (addr < 0 || addr + size > memory.data.size()) {
             // todo  make it exception.
             xerror("cppwasm: out of bounds memory access");
         }
         auto & mem = memory.data;
         auto data = I_encode(r.GetRef<Value>().to_i32());
-        mem.insert(mem.begin() + addr, data.begin(), data.begin() + size);
+
+        for (auto index = 0; index < std::min(size, data.size()); ++index) {
+            mem[index + addr] = data[index];
+        }
+        // printf("\n");
+        // for(auto index = 0;index<32;++index){
+        //     printf("0x%02x ",config->store->memory_list[0].data[index]);
+        // }
+        // printf("\n");
     }
 
     static void i64_store(Configuration * config, Instruction * i) {
-        auto size = 8;
+        std::size_t size = 8;
         auto r = config->stack.pop();
 
         auto memory_addr = config->frame.module->memory_addr_list[0];
-        auto memory = config->store.memory_list[memory_addr];
-        
+        auto & memory = config->store->memory_list[memory_addr];
         auto offset = dynamic_cast<args_load_store *>(i->args.get())->data.second;
         auto addr = config->stack.pop().GetRef<Value>().to_i32() + offset;
-        xdbg("instruction: i64_store  addr:%d offset:%d",addr,offset);
+        xdbg("instruction: i64_store  addr:%d offset:%d", addr, offset);
         if (addr < 0 || addr + size > memory.data.size()) {
             // todo  make it exception.
             xerror("cppwasm: out of bounds memory access");
         }
         auto & mem = memory.data;
         auto data = I_encode(r.GetRef<Value>().to_i64());
-        mem.insert(mem.begin() + addr, data.begin(), data.begin() + size);
+        for (auto index = 0; index < std::min(size, data.size()); ++index) {
+            mem[index + addr] = data[index];
+        }
     }
 
     static void f64_store(Configuration * config, Instruction * i) {
-        auto size = 8;
+        std::size_t size = 8;
         auto r = config->stack.pop();
 
         auto memory_addr = config->frame.module->memory_addr_list[0];
-        auto memory = config->store.memory_list[memory_addr];
-        
+        auto & memory = config->store->memory_list[memory_addr];
+
         auto offset = dynamic_cast<args_load_store *>(i->args.get())->data.second;
         auto addr = config->stack.pop().GetRef<Value>().to_i32() + offset;
-        xdbg("instruction: f64_store  addr:%d offset:%d",addr,offset);
+        xdbg("instruction: f64_store  addr:%d offset:%d", addr, offset);
         if (addr < 0 || addr + size > memory.data.size()) {
             // todo  make it exception.
             xerror("cppwasm: out of bounds memory access");
@@ -1106,9 +1132,14 @@ public:
         mem.insert(mem.begin() + addr, data.begin(), data.begin() + size);
     }
 
-    static void i32_const(Configuration * config, Instruction * i) {;
+    static void i32_const(Configuration * config, Instruction * i) {
         config->stack.append(Value::from_i32(dynamic_cast<args_i32_count *>(i->args.get())->data));
-        xdbg("instruction: i32_const %d",config->stack.back().GetRef<Value>().to_i32())
+        xdbg("instruction: i32_const %d", config->stack.back().GetRef<Value>().to_i32())
+    }
+
+    static void i64_const(Configuration * config, Instruction * i) {
+        config->stack.append(Value::from_i64(dynamic_cast<args_i32_count *>(i->args.get())->data));
+        xdbg("instruction: i32_const %d", config->stack.back().GetRef<Value>().to_i64())
     }
 
     static void i32_ges(Configuration * config, Instruction * i) {
@@ -1153,6 +1184,26 @@ public:
         auto c = Value::from_i32(a / b);
         config->stack.append(c);
     }
+
+    static void i64_or(Configuration * config, Instruction * i) {
+        auto b = config->stack.pop().GetRef<Value>().to_i64();
+        auto a = config->stack.pop().GetRef<Value>().to_i64();
+        auto c = Value::from_i64(a | b);
+        config->stack.append(c);
+    }
+
+    static void i64_shl(Configuration * config, Instruction * i) {
+        auto b = config->stack.pop().GetRef<Value>().to_i64();
+        auto a = config->stack.pop().GetRef<Value>().to_i64();
+        auto c = Value::from_i64(a << (b % 0x40));
+        config->stack.append(c);
+    }
+
+    static void i64_extend_ui32(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_extend_ui32");
+        auto a = config->stack.pop().GetRef<Value>().to_u32();
+        config->stack.append(Value::from_i64(a));
+    }
 };
 
 /**
@@ -1165,6 +1216,7 @@ class Machine {
 public:
     Machine() {
         module_instance = std::make_shared<ModuleInstance>();
+        store = std::make_shared<Store>();
     }
     ~Machine() {
         if (module_instance != nullptr) {
@@ -1173,7 +1225,7 @@ public:
     }
     std::shared_ptr<ModuleInstance> module_instance;
     // ModuleInstance module_instance{};
-    Store store{};
+    std::shared_ptr<Store> store;
 
     void instantiate(Module const & module, std::vector<ExternValue> extern_value_list) {
         module_instance->type_list = module.type_list;
@@ -1210,7 +1262,7 @@ public:
             auto r = config.exec().data[0];
             auto offset = r.to_i64();
             auto table_addr = module_instance->table_addr_list[_element.table_index];
-            auto & table_instance = store.table_list[table_addr];
+            auto & table_instance = store->table_list[table_addr];
             for (auto index = 0; index < _element.init.size(); ++index) {
                 table_instance.element_list[offset + index] = _element.init[index];
             }
@@ -1224,7 +1276,7 @@ public:
             auto r = config.exec().data[0];
             auto offset = r.to_i64();
             auto memory_addr = module_instance->memory_addr_list[_data.memory_index];
-            auto & memory_instance = store.memory_list[memory_addr];
+            auto & memory_instance = store->memory_list[memory_addr];
             for (auto b : _data.init) {
                 memory_instance.data[offset++] = b;
             }
@@ -1252,24 +1304,24 @@ public:
         }
 
         for (auto & _function : module.function_list) {
-            auto function_addr = store.allocate_wasm_function(module_instance, _function);
+            auto function_addr = store->allocate_wasm_function(module_instance, _function);
             module_instance->function_addr_list.push_back(function_addr);
         }
 
         for (auto & _table : module.table_list) {
-            auto table_addr = store.allocate_table(_table.type);
+            auto table_addr = store->allocate_table(_table.type);
             module_instance->table_addr_list.push_back(table_addr);
         }
 
         for (auto & _memory : module.memory_list) {
-            auto memory_addr = store.allocate_memory(_memory.type);
+            auto memory_addr = store->allocate_memory(_memory.type);
             module_instance->memory_addr_list.push_back(memory_addr);
             xdbg("size: %d type: %d val:%d", module_instance->memory_addr_list.size(), _memory.type, memory_addr);
         }
 
         for (auto index = 0; index < module.global_list.size(); ++index) {
             auto & _global = module.global_list[index];
-            auto global_addr = store.allocate_global(_global.type, global_value[index]);
+            auto global_addr = store->allocate_global(_global.type, global_value[index]);
         }
 
         for (auto & _export : module.export_list) {

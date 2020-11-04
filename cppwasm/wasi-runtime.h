@@ -4,8 +4,7 @@
 
 class Runtime {
 public:
-    Runtime(Module const & module, std::map<std::string, std::map<std::string, host_func_base_ptr>> & imps) {
-
+    Runtime(Module const & module, std::map<std::string, std::map<std::string, host_func_base_ptr>> & imps) : machine{} {
         // todo import_list?
         std::vector<ExternValue> extern_value_list;
         for (auto _import : module.import_list) {
@@ -16,7 +15,7 @@ public:
                 // extern_global = 0x03
             case 0x00: {
                 HostFunc hf{module.type_list[_import.desc], imps[_import.module][_import.name]};  // host_func_base_ptr
-                auto addr = machine.store.allocate_host_function(hf);
+                auto addr = machine.store->allocate_host_function(hf);
                 extern_value_list.push_back(std::make_pair(FUNCTION_EXT_INDEX, addr));
                 break;
             }
@@ -38,7 +37,7 @@ public:
             }
             case 0x03: {
                 // todo ? how global import
-                auto addr = store.allocate_global(_import.importdesc.GetRef<GlobalType>(), Value{});
+                auto addr = machine.store->allocate_global(_import.importdesc.GetRef<GlobalType>(), Value{});
                 extern_value_list.push_back(std::make_pair(GLOBAL_EXT_INDEX, addr));
                 break;
             }
@@ -69,32 +68,32 @@ public:
 
     Result exec(std::string const & name, std::vector<InputType> args) {
         FunctionAddress addr = func_addr(name);
-        FunctionInstance func = machine.store.function_list[addr];
+        FunctionInstance func = machine.store->function_list[addr];
         std::vector<Value> v_args{};
-        for(auto &a:args){
-            switch(a.GetType()){
-                case TYPE_I64:{
-                    xdbg("Get Value I64 %d", a.GetConstRef<int64_t>());
-                    v_args.push_back(Value(a.GetConstRef<int64_t>()));
-                    break;
-                }
-                case TYPE_F64:{
-                    v_args.push_back(Value(a.GetConstRef<double>()));
-                    break;
-                }
-                case TYPE_STR:{
-                    v_args.push_back(Value(a.GetConstRef<std::string>()));
-                    break;
-                }
-                default:
-                    xerror("cppwasm: UNKNOW INPUT TYPE");
+        for (auto & a : args) {
+            switch (a.GetType()) {
+            case TYPE_I64: {
+                xdbg("Get Value I64 %d", a.GetConstRef<int64_t>());
+                v_args.push_back(Value(a.GetConstRef<int64_t>()));
+                break;
+            }
+            case TYPE_F64: {
+                v_args.push_back(Value(a.GetConstRef<double>()));
+                break;
+            }
+            case TYPE_STR: {
+                v_args.push_back(Value(a.GetConstRef<std::string>()));
+                break;
+            }
+            default:
+                xerror("cppwasm: UNKNOW INPUT TYPE");
             }
         }
 
-        return exec_accu(name,v_args);
+        return exec_accu(name, v_args);
     }
 
-    
     Machine machine;
-    Store store;
+    // todo make store in runtime && observer_ptr in machine
+    // Store store;
 };

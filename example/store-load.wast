@@ -25,11 +25,14 @@
    )
   )
  )
- (func $show (; 3 ;)
+ (func $show (; 3 ;) (result i32)
   (call $print
    (i32.load offset=12
     (i32.const 0)
    )
+  )
+  (i32.load offset=12
+   (i32.const 0)
   )
  )
 )

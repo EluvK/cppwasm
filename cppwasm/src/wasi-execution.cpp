@@ -1,9 +1,9 @@
 #include "cppwasm/wasi-execution.h"
 
 Result Configuration::call(FunctionAddress function_addr, std::vector<Value> & function_args) {
-    auto & function = store.function_list[function_addr];
+    auto & function = store->function_list[function_addr];
     xdbg("-----------------Configuration call--------------");
-    xdbg("call %s function_addr: %d (list size:%d)", function.GetType() == 1 ? "wasmfunc" : "hostfunc", function_addr, store.function_list.size());
+    xdbg("call %s function_addr: %d (list size:%d)", function.GetType() == 1 ? "wasmfunc" : "hostfunc", function_addr, store->function_list.size());
 
     // todo assert func type match args.
 
