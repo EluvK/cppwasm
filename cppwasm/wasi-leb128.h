@@ -72,3 +72,35 @@ static int64_t I_decode_reader(byte_IO & bio) {
     }
     return I_decode(bv);
 }
+
+static byte_vec F_encode(double f64) {
+    byte_vec res{};
+    char * p = (char *)&f64;
+    for (int index = 0; index < 8; ++index) {
+        res.push_back(*p++);
+    }
+    return res;
+}
+static double F_decode(byte_vec bv) {
+    char p[8] = {};
+    for (auto index = 0; index < bv.size(); index++) {
+        p[index] = bv[index];
+    }
+    double res = *(double *)p;
+    return res;
+}
+
+static byte_vec S_encode(std::string str) {
+    byte_vec res{};
+    for (auto c : str) {
+        res.push_back(c);
+    }
+    return res;
+}
+static std::string S_decode(byte_vec bv) {
+    std::string res;
+    for (auto b : bv) {
+        res += b;
+    }
+    return res;
+}

@@ -5,6 +5,7 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include <string>
 
 using byte = uint8_t;
 using byte_vec = std::vector<byte>;

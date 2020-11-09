@@ -13,7 +13,7 @@ Result Configuration::call(FunctionAddress function_addr, std::vector<Value> & f
         auto const & func = function.GetConstRef<WasmFunc>();
         auto const & value_type_vec = func.code.local_list;
         for (auto const & _value_type : value_type_vec) {
-            function_args.push_back(Value::newValue(_value_type, 0));
+            function_args.push_back(Value::newValue(0));
         }
         Frame frame{func.module, function_args, func.code.expr, func.type.rets.data.size()};
         set_frame(frame);

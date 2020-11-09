@@ -13,69 +13,60 @@ class Value {
 public:
     Value() {
     }
-    Value(int64_t i64) : i64_data{i64}, type{TYPE_I64} {
+    Value(byte_vec bv) : raw_data{bv} {
     }
-    Value(double f64) : f64_data(f64), type{TYPE_F64} {
+    Value(int32_t i32) : raw_data{I_encode(i32)} {
     }
-    Value(std::string str) : str_data{str} {
+    Value(int64_t i64) : raw_data{I_encode(i64)} {
     }
-    // Value(byte _data) : data{_data} {
-    // }
-    // Value(byte _type, byte_vec _data) {
-    //     type = _type;
-    //     data = _data;
-    // }
-    static Value newValue(ValueType type, InputType data) {
+    Value(uint32_t u32) : raw_data{U_encode(u32)} {
+    }
+    Value(uint64_t u64) : raw_data{U_encode(u64)} {
+    }
+    Value(float f32) : raw_data{F_encode(static_cast<double>(f32))} {
+    }
+    Value(double f64) : raw_data{F_encode(f64)} {
+    }
+    Value(std::string str) : raw_data{S_encode(str)} {
+    }
+
+    int32_t to_i32() {
+        return static_cast<int32_t>(I_decode(raw_data));
+    }
+    int64_t to_i64() {
+        return I_decode(raw_data);
+    }
+    uint32_t to_u32() {
+        return static_cast<uint32_t>(U_decode(raw_data));
+    }
+    uint64_t to_u64() {
+        return U_decode(raw_data);
+    }
+    float to_f32() {
+        return static_cast<float>(F_decode(raw_data));
+    }
+    double to_f64() {
+        return F_decode(raw_data);
+    }
+    std::string to_string() {
+        return S_decode(raw_data);
+    }
+
+    static Value newValue(InputType data) {
         switch (data.GetType()) {
         case TYPE_I64:
             return Value(data.GetConstRef<int64_t>());
         case TYPE_F64:
             return Value(data.GetConstRef<double>());
+        case TYPE_STR:
+            return Value(data.GetConstRef<std::string>());
         default:
             xerror("cppwasm unknow input type");
         }
     }
-    static Value from_i32(int32_t i) {
-        return newValue(TYPE_I64, i);
-    }
-    static Value from_i64(int64_t i) {
-        return newValue(TYPE_I64, i);
-    }
-    static Value from_f32(float f) {
-        return newValue(TYPE_F64, f);
-    }
-    static Value from_f64(float f) {
-        return newValue(TYPE_F64, f);
-    }
-    static Value from_str(std::string str) {
-        return newValue(TYPE_STR, str);
-    }
-
-    uint32_t to_u32() {
-        return static_cast<uint32_t>(i64_data);
-    }
-
-    int32_t to_i32() {
-        return static_cast<int32_t>(i64_data);
-    }
-    int64_t to_i64() {
-        return i64_data;
-    }
-    float to_f32() {
-        return static_cast<float>(f64_data);
-    }
-    double to_f64() {
-        return f64_data;
-    }
-    std::string to_string() {
-        return str_data;
-    }
 
 private:
-    byte type;
-    int64_t i64_data;
-    double f64_data;
-    std::string str_data{};
+    byte_vec raw_data;
 };
 
 class Result {
@@ -794,7 +785,7 @@ public:
         auto ptr = dynamic_cast<args_block *>(i->args.get());
         int32_t arity{1};
         // todo make 0x40:convention.empty
-        if (ptr->data.data == 0x40) {
+        if (ptr->data == 0x40) {
             arity = 0;
         }
         auto continuation = config->frame.expr.position[config->pc][1];
@@ -806,7 +797,7 @@ public:
         auto ptr = dynamic_cast<args_block *>(i->args.get());
         int32_t arity{1};
         // todo make 0x40:convention.empty
-        if (ptr->data.data == 0x40) {
+        if (ptr->data == 0x40) {
             arity = 0;
         }
         auto continuation = config->frame.expr.position[config->pc][0];
@@ -819,7 +810,7 @@ public:
         auto ptr = dynamic_cast<args_block *>(i->args.get());
         int32_t arity{1};
         // todo make 0x40:convention.empty
-        if (ptr->data.data == 0x40) {
+        if (ptr->data == 0x40) {
             arity = 0;
         }
         auto continuation = config->frame.expr.position[config->pc][1];
@@ -1133,12 +1124,12 @@ public:
     }
 
     static void i32_const(Configuration * config, Instruction * i) {
-        config->stack.append(Value::from_i32(dynamic_cast<args_i32_count *>(i->args.get())->data));
+        config->stack.append(Value(dynamic_cast<args_i32_count *>(i->args.get())->data));
         xdbg("instruction: i32_const %d", config->stack.back().GetRef<Value>().to_i32())
     }
 
     static void i64_const(Configuration * config, Instruction * i) {
-        config->stack.append(Value::from_i64(dynamic_cast<args_i32_count *>(i->args.get())->data));
+        config->stack.append(Value(dynamic_cast<args_i32_count *>(i->args.get())->data));
         xdbg("instruction: i32_const %d", config->stack.back().GetRef<Value>().to_i64())
     }
 
@@ -1147,14 +1138,14 @@ public:
         auto b = config->stack.pop().GetRef<Value>().to_i32();
         auto a = config->stack.pop().GetRef<Value>().to_i32();
         int32_t c = a >= b ? 1 : 0;
-        config->stack.append(Value::from_i32(c));
+        config->stack.append(Value(c));
     }
 
     static void i32_add(Configuration * config, Instruction * i) {
         auto b = config->stack.pop().GetRef<Value>().to_i32();
         auto a = config->stack.pop().GetRef<Value>().to_i32();
         xdbg("instruction: i32_add [%d + %d = %d]", a, b, a + b);
-        auto c = Value::from_i32(a + b);
+        auto c = Value(a + b);
         config->stack.append(c);
     }
 
@@ -1162,7 +1153,7 @@ public:
         auto b = config->stack.pop().GetRef<Value>().to_i32();
         auto a = config->stack.pop().GetRef<Value>().to_i32();
         xdbg("instruction: i32_sub [%d - %d = %d]", a, b, a - b);
-        auto c = Value::from_i32(a - b);
+        auto c = Value(a - b);
         config->stack.append(c);
     }
 
@@ -1170,7 +1161,7 @@ public:
         xdbg("instruction: i32_mul");
         auto b = config->stack.pop().GetRef<Value>().to_i32();
         auto a = config->stack.pop().GetRef<Value>().to_i32();
-        auto c = Value::from_i32(a * b);
+        auto c = Value(a * b);
         config->stack.append(c);
     }
 
@@ -1181,28 +1172,28 @@ public:
         // todo ? exception
         if (b == 0)
             xerror("cppwasm : integer divide by zero");
-        auto c = Value::from_i32(a / b);
+        auto c = Value(a / b);
         config->stack.append(c);
     }
 
     static void i64_or(Configuration * config, Instruction * i) {
         auto b = config->stack.pop().GetRef<Value>().to_i64();
         auto a = config->stack.pop().GetRef<Value>().to_i64();
-        auto c = Value::from_i64(a | b);
+        auto c = Value(a | b);
         config->stack.append(c);
     }
 
     static void i64_shl(Configuration * config, Instruction * i) {
         auto b = config->stack.pop().GetRef<Value>().to_i64();
         auto a = config->stack.pop().GetRef<Value>().to_i64();
-        auto c = Value::from_i64(a << (b % 0x40));
+        auto c = Value(a << (b % 0x40));
         config->stack.append(c);
     }
 
     static void i64_extend_ui32(Configuration * config, Instruction * i) {
         xdbg("instruction: i64_extend_ui32");
         auto a = config->stack.pop().GetRef<Value>().to_u32();
-        config->stack.append(Value::from_i64(a));
+        config->stack.append(Value(a));
     }
 };
 

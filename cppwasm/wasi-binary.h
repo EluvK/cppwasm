@@ -135,25 +135,29 @@ static LabelIndex GetLabelIndex(byte_IO & BinaryIO) {
  *      0x7c: f64,
  * }
  */
-class ValueType {
-public:
-    ValueType() {
-    }
-    ValueType(byte b) : data{b} {
-    }
+using ValueType = byte;
+static ValueType GetValueType(byte_IO & BinaryIO){
+    return ValueType{BinaryIO.read_one()};
+}
+// class ValueType {
+// public:
+//     ValueType() {
+//     }
+//     ValueType(byte b) : data{b} {
+//     }
 
-    static ValueType GetValueType(byte_IO & BinaryIO) {
-        return ValueType(BinaryIO.read_one());
-    }
-    bool operator==(ValueType const & other) const noexcept {
-        return data == other.data;
-    }
-    bool operator!=(ValueType const & other) const noexcept {
-        return !(*this == other);
-    }
+//     static ValueType GetValueType(byte_IO & BinaryIO) {
+//         return ValueType(BinaryIO.read_one());
+//     }
+//     bool operator==(ValueType const & other) const noexcept {
+//         return data == other.data;
+//     }
+//     bool operator!=(ValueType const & other) const noexcept {
+//         return !(*this == other);
+//     }
 
-    byte data;
-};
+//     byte data;
+// };
 
 /**
  * @brief Result types classify the result of executing instructions or blocks, which is a sequence of values written with brackets.
@@ -169,7 +173,7 @@ public:
         ResultType res{};
         uint64_t size = U_decode_reader(BinaryIO);
         for (auto index = 0; index < size; ++index) {
-            res.data.push_back(ValueType::GetValueType(BinaryIO));
+            res.data.push_back(GetValueType(BinaryIO));
         }
         return res;
     }
@@ -248,17 +252,21 @@ public:
  * In future versions of WebAssembly, additional element types may be introduced.
  *
  */
-class ElementType {
-public:
-    ElementType() {
-    }
-    ElementType(byte b) : data{b} {
-    }
-    static ElementType GetElementType(byte_IO & BinaryIO) {
-        return ElementType{BinaryIO.read_one()};
-    }
-    byte data;
-};
+using ElementType = byte;
+static ElementType GetElementType(byte_IO & BinaryIO){
+    return ElementType{BinaryIO.read_one()};
+}
+// class ElementType {
+// public:
+//     ElementType() {
+//     }
+//     ElementType(byte b) : data{b} {
+//     }
+//     static ElementType GetElementType(byte_IO & BinaryIO) {
+//         return ElementType{BinaryIO.read_one()};
+//     }
+//     byte data;
+// };
 
 /**
  * @brief Table types classify tables over elements of element types within a size range.
@@ -277,7 +285,7 @@ public:
 
     static TableType GetTableType(byte_IO & BinaryIO) {
         TableType res{};
-        res.element_type = ElementType::GetElementType(BinaryIO);
+        res.element_type = GetElementType(BinaryIO);
         res.limits = Limits::GetLimits(BinaryIO);
         return res;
     }
@@ -289,17 +297,21 @@ public:
 /**
  * @brief # Mut const | var
  */
-class Mut {
-public:
-    Mut() {
-    }
-    Mut(byte b) : data{b} {
-    }
-    static Mut GetMut(byte_IO & BinaryIO) {
-        return Mut{BinaryIO.read_one()};
-    }
-    byte data;
-};
+using Mut = byte;
+static Mut GetMut(byte_IO & BinaryIO){
+    return Mut{BinaryIO.read_one()};
+}
+// class Mut {
+// public:
+//     Mut() {
+//     }
+//     Mut(byte b) : data{b} {
+//     }
+//     static Mut GetMut(byte_IO & BinaryIO) {
+//         return Mut{BinaryIO.read_one()};
+//     }
+//     byte data;
+// };
 
 class GlobalType {
 public:
@@ -308,8 +320,8 @@ public:
 
     static GlobalType GetGlobalType(byte_IO & BinaryIO) {
         GlobalType res{};
-        res.value_type = ValueType::GetValueType(BinaryIO);
-        res.mut = Mut::GetMut(BinaryIO);
+        res.value_type = GetValueType(BinaryIO);
+        res.mut = GetMut(BinaryIO);
     }
 
     ValueType value_type;
@@ -329,18 +341,22 @@ public:
  *             | t: valtype
  *             | x: s33
  */
-class BlockType {
-public:
-    BlockType() {
-    }
+using BlockType = byte;
+static BlockType GetBlockType(byte_IO & BinaryIO){
+    return BlockType{BinaryIO.read_one()};
+}
+// class BlockType {
+// public:
+//     BlockType() {
+//     }
 
-    static BlockType GetBlockType(byte_IO & BinaryIO) {
-        BlockType res{};
-        res.data = BinaryIO.read_one();
-        return res;
-    }
-    byte data;
-};
+//     static BlockType GetBlockType(byte_IO & BinaryIO) {
+//         BlockType res{};
+//         res.data = BinaryIO.read_one();
+//         return res;
+//     }
+//     byte data;
+// };
 
 //----------------------
 // mywork
@@ -435,7 +451,7 @@ public:
         case instruction::block:
         case instruction::loop:
         case instruction::if_: {
-            auto bt = BlockType::GetBlockType(BinaryIO);
+            auto bt = GetBlockType(BinaryIO);
             o.args = std::make_shared<args_block>(bt);
             break;
         }
@@ -1098,7 +1114,7 @@ public:
         if (res.n > 0x10000000) {
             xerror("cppwasm: too many locals");
         }
-        res.type = ValueType::GetValueType(BinaryIO);
+        res.type = GetValueType(BinaryIO);
         return res;
     }
 
@@ -1267,6 +1283,12 @@ public:
     Expression expr;
 };
 
+/**
+ * @brief The binary encoding of modules is organized into sections. Most sections correspond to one component of a module
+ * record, except that function definitions are split into two sections, separating their type declarations in the
+ * function section from their bodies in the code section.
+ * 
+ */
 class Module {
 public:
     Module(const char * file_path) {
