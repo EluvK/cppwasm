@@ -19,11 +19,4 @@ TEST(test_, value_1) {
     EXPECT_TRUE(Value{f32}.to_f32() == f32);
     EXPECT_TRUE(Value{f64}.to_f64() == f64);
     EXPECT_TRUE(Value{"12341235qwertyuioplkjhgfdsazxcvbn"}.to_string() == "12341235qwertyuioplkjhgfdsazxcvbn");
-
-    for (int i = 0; i < 10; ++i) {
-        double b = 123.1234 + i;
-        byte_vec res = F_encode(b);
-        double f = F_decode(res);
-        xdbg("%f", f);
-    }
 }

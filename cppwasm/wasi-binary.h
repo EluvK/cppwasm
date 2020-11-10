@@ -399,11 +399,48 @@ public:
     LabelIndex data;
 };
 
+class args_get_global : public instruction_args_base {
+public:
+    args_get_global(GlobalIndex li) : data(li) {
+    }
+
+    GlobalIndex data;
+};
+
+class args_memory : public instruction_args_base {
+public:
+    args_memory(byte b) : data{b} {
+    }
+
+    byte data;
+};
+
 class args_i32_count : public instruction_args_base {
 public:
     args_i32_count(int32_t i) : data(i) {
     }
     int32_t data;
+};
+
+class args_i64_count : public instruction_args_base {
+public:
+    args_i64_count(int64_t i) : data(i) {
+    }
+    int64_t data;
+};
+
+class args_f32_count : public instruction_args_base {
+public:
+    args_f32_count(float i) : data(i) {
+    }
+    float data;
+};
+
+class args_f64_count : public instruction_args_base {
+public:
+    args_f64_count(double i) : data(i) {
+    }
+    double data;
 };
 
 class args_call : public instruction_args_base {
@@ -412,7 +449,14 @@ public:
     }
     FunctionIndex data;
 };
-using args_ptr = std::shared_ptr<instruction_args_base>;
+
+class args_call_indirect : public instruction_args_base {
+public:
+    args_call_indirect(TypeIndex ti, byte _n) : data{std::make_pair(ti, _n)} {
+    }
+
+    std::pair<TypeIndex, byte> data;
+};
 
 class args_load_store : public instruction_args_base {
 public:
@@ -421,6 +465,7 @@ public:
 
     std::pair<byte, byte> data;
 };
+using args_ptr = std::shared_ptr<instruction_args_base>;
 //--------------
 
 /**
@@ -446,6 +491,7 @@ public:
         case instruction::unreachable:
         case instruction::nop: {
             xdbg("unreachable nop?");
+            xerror("not support unreachable && nop");
             break;
         }
         case instruction::block:
@@ -475,7 +521,10 @@ public:
             break;
         }
         case instruction::call_indirect: {
-            xerror("unfinish instruction: call_indirect");
+            auto ti = TypeIndex(U_decode_reader(BinaryIO));
+            byte n = BinaryIO.read_one();
+            o.args = std::make_shared<args_call_indirect>(ti, n);
+            break;
         }
 
         case instruction::get_local:
@@ -488,7 +537,9 @@ public:
 
         case instruction::get_global:
         case instruction::set_global: {
-            xerror("unfinish instruction: get&&set global");
+            auto gi = GlobalIndex(U_decode_reader(BinaryIO));
+            o.args = std::make_shared<args_get_global>(gi);
+            break;
         }
 
         case instruction::i32_load:
@@ -523,21 +574,35 @@ public:
         }
 
         case instruction::current_memory:
-        case instruction::grow_memory:
-
-            xdbg("unknow instruction: 0x%02x", o.opcode);
-        case instruction::i32_const:
-        case instruction::i64_const: {
+        case instruction::grow_memory:{
+            byte n = BinaryIO.read_one();
+            o.args = std::make_shared<args_memory>(n);
+            break;
+        }
+        case instruction::i32_const:{
             auto i32 = I_decode_reader(BinaryIO);
             o.args = std::make_shared<args_i32_count>(i32);
             break;
         }
+        case instruction::i64_const: {
+            auto i64 = I_decode_reader(BinaryIO);
+            o.args = std::make_shared<args_i64_count>(i64);
+            break;
+        }
 
-        case instruction::f32_const:
+        case instruction::f32_const:{
+            auto f32 = F32_decode_reader(BinaryIO);
+            o.args = std::make_shared<args_f32_count>(f32);
+            break;
+        }
 
-        case instruction::f64_const:
+        case instruction::f64_const:{
+            auto f32 = F64_decode_reader(BinaryIO);
+            o.args = std::make_shared<args_f64_count>(f32);
+            break;
+        }
 
-            // default:
+        default:
             xdbg("unknow instruction: 0x%02x", o.opcode);
         }
         return o;

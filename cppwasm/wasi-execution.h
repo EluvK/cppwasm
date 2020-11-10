@@ -23,9 +23,9 @@ public:
     }
     Value(uint64_t u64) : raw_data{U_encode(u64)} {
     }
-    Value(float f32) : raw_data{F_encode(static_cast<double>(f32))} {
+    Value(float f32) : raw_data{F32_encode(f32)} {
     }
-    Value(double f64) : raw_data{F_encode(f64)} {
+    Value(double f64) : raw_data{F64_encode(f64)} {
     }
     Value(std::string str) : raw_data{S_encode(str)} {
     }
@@ -43,10 +43,10 @@ public:
         return U_decode(raw_data);
     }
     float to_f32() {
-        return static_cast<float>(F_decode(raw_data));
+        return F32_decode(raw_data);
     }
     double to_f64() {
-        return F_decode(raw_data);
+        return F64_decode(raw_data);
     }
     std::string to_string() {
         return S_decode(raw_data);
@@ -611,9 +611,13 @@ public:
         case instruction::i64_store8:
         case instruction::i64_store16:
         case instruction::i64_store32:
-        case instruction::current_memory:
-        case instruction::grow_memory:
             xdbg("instruction: 0x%02x", i->opcode);
+            break;
+        case instruction::current_memory:
+            current_memory(config, i);
+            break;
+        case instruction::grow_memory:
+            grow_memory(config, i);
             break;
         case instruction::i32_const:
             i32_const(config, i);
@@ -622,7 +626,11 @@ public:
             i64_const(config, i);
             break;
         case instruction::f32_const:
+            f32_const(config, i);
+            break;
         case instruction::f64_const:
+            f64_const(config, i);
+            break;
         case instruction::i32_eqz:
         case instruction::i32_eq:
         case instruction::i32_ne:
@@ -969,7 +977,19 @@ public:
     }
 
     static void call_indirect(Configuration * config, Instruction * i) {
-        xerror("haven't write this ins");
+        xdbg("instruction: call_indirect");
+        auto ptr = dynamic_cast<args_call_indirect *>(i->args.get());
+        if (ptr->data.second != 0x00) {
+            xerror("cppwasm: zero byte malformed in call_indirect")
+        }
+        auto const & ta = config->frame.module->table_addr_list[0];
+        auto const & tab = config->store->table_list[ta];
+        auto idx = config->stack.pop().GetRef<Value>().to_i32();
+        if (idx < 0 || idx >= tab.element_list.size()) {
+            xerror("cppwasm: undefined element");
+        }
+        auto const & func_addr = tab.element_list[idx];
+        call_function_addr(config, func_addr);
     }
 
     static void drop(Configuration * config, Instruction * i) {
@@ -1010,11 +1030,23 @@ public:
     }
 
     static void get_global(Configuration * config, Instruction * i) {
+        xdbg("instruction: get_global");
+        auto ptr = dynamic_cast<args_get_global *>(i->args.get());
+        auto a = config->frame.module->gloabl_addr_list[ptr->data];
+        auto const & glob = config->store->global_list[a];
+        auto & r = glob.value;
+        config->stack.append(r);
     }
 
     static void set_global(Configuration * config, Instruction * i) {
+        xdbg("instruction: set_global");
+        auto ptr = dynamic_cast<args_get_global *>(i->args.get());
+        auto a = config->frame.module->gloabl_addr_list[ptr->data];
+        auto & glob = config->store->global_list[a];
+        // todo make is static const var = 0x01;
+        ASSERT(glob.mut == 0x01, "should be mutable");
+        glob.value = config->stack.pop().GetConstRef<Value>();
     }
-    //..........
 
     static void mem_load(Configuration * config, Instruction * i, int64_t size) {
     }
@@ -1121,14 +1153,39 @@ public:
         mem.insert(mem.begin() + addr, data.begin(), data.begin() + size);
     }
 
+    static void current_memory(Configuration * config, Instruction * i) {
+        auto memory_addr = config->frame.module->memory_addr_list[0];
+        auto const & memory = config->store->memory_list[memory_addr];
+        config->stack.append(Value{memory.size});
+    }
+
+    static void grow_memory(Configuration * config, Instruction * i) {
+        auto memory_addr = config->frame.module->memory_addr_list[0];
+        auto & memory = config->store->memory_list[memory_addr];
+        auto r = config->stack.pop().GetRef<Value>().to_i32();
+        // todo add memory grow exception. might fail.
+        memory.grow(r);
+        config->stack.append(Value{memory.size});
+    }
+
     static void i32_const(Configuration * config, Instruction * i) {
         config->stack.append(Value(dynamic_cast<args_i32_count *>(i->args.get())->data));
         xdbg("instruction: i32_const %d", config->stack.back().GetRef<Value>().to_i32())
     }
 
     static void i64_const(Configuration * config, Instruction * i) {
-        config->stack.append(Value(dynamic_cast<args_i32_count *>(i->args.get())->data));
-        xdbg("instruction: i32_const %d", config->stack.back().GetRef<Value>().to_i64())
+        config->stack.append(Value(dynamic_cast<args_i64_count *>(i->args.get())->data));
+        xdbg("instruction: i64_const %d", config->stack.back().GetRef<Value>().to_i64())
+    }
+
+    static void f32_const(Configuration * config, Instruction * i) {
+        config->stack.append(Value(dynamic_cast<args_f32_count *>(i->args.get())->data));
+        xdbg("instruction: f32_const %d", config->stack.back().GetRef<Value>().to_f32())
+    }
+
+    static void f64_const(Configuration * config, Instruction * i) {
+        config->stack.append(Value(dynamic_cast<args_f64_count *>(i->args.get())->data));
+        xdbg("instruction: f64_const %d", config->stack.back().GetRef<Value>().to_f64())
     }
 
     static void i32_ges(Configuration * config, Instruction * i) {

@@ -1,6 +1,6 @@
-// #include "../wasi-runtime.h"
+#include "../wasi-runtime.h"
 
-// #include <gtest/gtest.h>
+#include <gtest/gtest.h>
 // class A {
 //     int a;
 //     float f;

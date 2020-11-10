@@ -73,7 +73,33 @@ static int64_t I_decode_reader(byte_IO & bio) {
     return I_decode(bv);
 }
 
-static byte_vec F_encode(double f64) {
+static byte_vec F32_encode(float f32) {
+    byte_vec res{};
+    char * p = (char *)&f32;
+    for (int index = 0; index < 4; ++index) {
+        res.push_back(*p++);
+    }
+    return res;
+}
+static float F32_decode(byte_vec bv) {
+    char p[4] = {};
+    for (auto index = 0; index < bv.size(); index++) {
+        p[index] = bv[index];
+    }
+    float res = *(float *)p;
+    return res;
+}
+static float F32_decode_reader(byte_IO & bio) {
+    byte_vec bv;
+    int cnt = 4;
+    while (cnt--) {
+        auto b = bio.read_one();
+        bv.push_back(b);
+    }
+    return F32_decode(bv);
+}
+
+static byte_vec F64_encode(double f64) {
     byte_vec res{};
     char * p = (char *)&f64;
     for (int index = 0; index < 8; ++index) {
@@ -81,13 +107,22 @@ static byte_vec F_encode(double f64) {
     }
     return res;
 }
-static double F_decode(byte_vec bv) {
+static double F64_decode(byte_vec bv) {
     char p[8] = {};
     for (auto index = 0; index < bv.size(); index++) {
         p[index] = bv[index];
     }
     double res = *(double *)p;
     return res;
+}
+static double F64_decode_reader(byte_IO & bio) {
+    byte_vec bv;
+    int cnt = 8;
+    while (cnt--) {
+        auto b = bio.read_one();
+        bv.push_back(b);
+    }
+    return F64_decode(bv);
 }
 
 static byte_vec S_encode(std::string str) {
