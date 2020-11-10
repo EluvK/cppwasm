@@ -419,7 +419,6 @@ public:
     stack_unit back() {
         return data.back();
     }
-    // todo complete it.
     Label get_nth_label(uint32_t i) {
         // for(auto v:data){
         //     if(v.GetType()==STACK_UNIT_LABEL_TYPE){
@@ -483,7 +482,6 @@ static bool match_memory(MemoryType a, MemoryType b) {
  * thread ::= frame;instr∗
  *
  */
-// todo complete it.
 class Configuration {
 public:
     Configuration(std::shared_ptr<Store> _store) : store{_store} {
@@ -955,7 +953,7 @@ public:
             function_args.push_back(config->stack.pop());
         }
 
-        xdbg("%d,%d", func_type.args.data.size(), function_args[0].to_i32());
+        // xdbg("%d,%d", func_type.args.data.size(), function_args[0].to_i32());
         Configuration subconf(config->store);
         subconf.depth = config->depth + 1;
         Result r = subconf.call(function_addr, function_args);

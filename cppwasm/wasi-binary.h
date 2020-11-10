@@ -642,7 +642,6 @@ public:
         }
         res.desc = BinaryIO.read_one();
         switch (res.desc) {
-        // todo check if it is right.
         // extern_function = 0x00
         // extern_table = 0x01
         // extern_memory = 0x02
@@ -957,7 +956,6 @@ public:
             res.name += BinaryIO.read_one();
         }
         res.type = BinaryIO.read_one();
-        // todo check if it is right.
         switch (res.type) {
             // extern_function = 0x00
             // extern_table = 0x01
@@ -983,7 +981,6 @@ public:
     }
     std::string name;
     byte type;
-    // Variant<FunctionIndex, TableIndex, MemoryIndex, GlobalIndex> exportdesc;
     byte exportdesc;
 };
 
@@ -1110,7 +1107,6 @@ public:
     static Locals GetLocals(byte_IO & BinaryIO) {
         Locals res{};
         res.n = U_decode_reader(BinaryIO);
-        // todo comment
         if (res.n > 0x10000000) {
             xerror("cppwasm: too many locals");
         }
