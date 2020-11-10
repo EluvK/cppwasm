@@ -71,23 +71,7 @@ public:
         FunctionInstance func = machine.store->function_list[addr];
         std::vector<Value> v_args{};
         for (auto & a : args) {
-            switch (a.GetType()) {
-            case TYPE_I64: {
-                xdbg("Get Value I64 %d", a.GetConstRef<int64_t>());
-                v_args.push_back(Value(a.GetConstRef<int64_t>()));
-                break;
-            }
-            case TYPE_F64: {
-                v_args.push_back(Value(a.GetConstRef<double>()));
-                break;
-            }
-            case TYPE_STR: {
-                v_args.push_back(Value(a.GetConstRef<std::string>()));
-                break;
-            }
-            default:
-                xerror("cppwasm: UNKNOW INPUT TYPE");
-            }
+            v_args.push_back(Value::newValue(a));
         }
 
         return exec_accu(name, v_args);

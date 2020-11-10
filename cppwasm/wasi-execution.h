@@ -4,10 +4,12 @@
 // #include "wasi-alu.h"
 #include "wasi-binary.h"
 
-using InputType = Variant<int64_t, double, std::string>;
-#define TYPE_I64 1
-#define TYPE_F64 2
-#define TYPE_STR 3
+using InputType = Variant<int32_t, int64_t, float, double, std::string>;
+#define TYPE_I32 1
+#define TYPE_I64 2
+#define TYPE_F32 3
+#define TYPE_F64 4
+#define TYPE_STR 5
 
 class Value {
 public:
@@ -51,11 +53,18 @@ public:
     std::string to_string() {
         return S_decode(raw_data);
     }
+    byte_vec raw() {
+        return raw_data;
+    }
 
     static Value newValue(InputType data) {
         switch (data.GetType()) {
+        case TYPE_I32:
+            return Value(data.GetConstRef<int32_t>());
         case TYPE_I64:
             return Value(data.GetConstRef<int64_t>());
+        case TYPE_F32:
+            return Value(data.GetConstRef<float>());
         case TYPE_F64:
             return Value(data.GetConstRef<double>());
         case TYPE_STR:
@@ -582,18 +591,40 @@ public:
             i64_load(config, i);
             break;
         case instruction::f32_load:
+            f32_load(config, i);
+            break;
         case instruction::f64_load:
+            f64_load(config, i);
+            break;
         case instruction::i32_load8_s:
+            i32_load8_s(config, i);
+            break;
         case instruction::i32_load8_u:
+            i32_load8_u(config, i);
+            break;
         case instruction::i32_load16_s:
+            i32_load16_s(config, i);
+            break;
         case instruction::i32_load16_u:
+            i32_load16_u(config, i);
+            break;
         case instruction::i64_load8_s:
+            i64_load8_s(config, i);
+            break;
         case instruction::i64_load8_u:
+            i64_load8_u(config, i);
+            break;
         case instruction::i64_load16_s:
+            i64_load16_s(config, i);
+            break;
         case instruction::i64_load16_u:
+            i64_load16_u(config, i);
+            break;
         case instruction::i64_load32_s:
+            i64_load32_s(config, i);
+            break;
         case instruction::i64_load32_u:
-            xdbg("instruction: 0x%02x", i->opcode);
+            i64_load32_u(config, i);
             break;
         case instruction::i32_store:
             i32_store(config, i);
@@ -602,16 +633,25 @@ public:
             i64_store(config, i);
             break;
         case instruction::f32_store:
-            xerror("false");
+            f32_store(config, i);
+            break;
         case instruction::f64_store:
             f64_store(config, i);
             break;
         case instruction::i32_store8:
+            i32_store8(config, i);
+            break;
         case instruction::i32_store16:
+            i32_store16(config, i);
+            break;
         case instruction::i64_store8:
+            i64_store8(config, i);
+            break;
         case instruction::i64_store16:
+            i64_store16(config, i);
+            break;
         case instruction::i64_store32:
-            xdbg("instruction: 0x%02x", i->opcode);
+            i64_store32(config, i);
             break;
         case instruction::current_memory:
             current_memory(config, i);
@@ -1048,109 +1088,152 @@ public:
         glob.value = config->stack.pop().GetConstRef<Value>();
     }
 
-    static void mem_load(Configuration * config, Instruction * i, int64_t size) {
+    static byte_vec mem_load(Configuration * config, Instruction * i, std::size_t size) {
+        byte_vec res{};
+
+        auto memory_addr = config->frame.module->memory_addr_list[0];
+        auto & memory = config->store->memory_list[memory_addr];
+        auto offset = dynamic_cast<args_load_store *>(i->args.get())->data.second;
+        auto addr = config->stack.pop().GetRef<Value>().to_i32() + offset;
+        xdbg("instruction: mem_load  addr:%d offset:%d", addr, offset);
+        if (addr < 0 || addr + size > memory.data.size()) {
+            // todo  make it exception.
+            xerror("cppwasm: out of bounds memory access");
+        }
+        auto & mem = memory.data;
+
+        for (auto index = 0; index < size; ++index) {
+            res.push_back(mem[index + addr]);
+        }
+
+        // debug:
+        std::printf("------mem load: ");
+        for (auto index = 0; index < res.size(); ++index) {
+            std::printf("0x%02x ", res[index]);
+        }
+        std::printf("\n");
+
+        return res;
     }
 
     static void i32_load(Configuration * config, Instruction * i) {
-        std::size_t size = 4;
-        auto memory_addr = config->frame.module->memory_addr_list[0];
-        auto const & memory = config->store->memory_list[memory_addr];
-        auto offset = dynamic_cast<args_load_store *>(i->args.get())->data.second;
-        auto addr = config->stack.pop().GetRef<Value>().to_i32() + offset;
-        xdbg("instruction: i32_load  addr:%d offset:%d", addr, offset);
-        if (addr < 0 || addr + size > memory.data.size()) {
-            // todo  make it exception.
-            xerror("cppwasm: out of bounds memory access");
-        }
-        byte_vec bv(memory.data.begin() + addr, memory.data.begin() + addr + size);
-        Value r{I_decode(bv)};
-        xdbg("         - : load val into stack: %d", r.to_i32());
-        config->stack.append(r);
+        config->stack.append(Value(I_decode(mem_load(config, i, 4))));
+        xdbg("instruction: i32_load %d", config->stack.back().GetRef<Value>().to_i32());
     }
 
     static void i64_load(Configuration * config, Instruction * i) {
-        std::size_t size = 8;
+        config->stack.append(Value(I_decode(mem_load(config, i, 8))));
+        xdbg("instruction: i64_load %d", config->stack.back().GetRef<Value>().to_i64());
+    }
+
+    static void f32_load(Configuration * config, Instruction * i) {
+        config->stack.append(Value(F32_decode(mem_load(config, i, 4))));
+        xdbg("instruction: f32_load %f", config->stack.back().GetRef<Value>().to_f32());
+    }
+
+    static void f64_load(Configuration * config, Instruction * i) {
+        config->stack.append(Value(F64_decode(mem_load(config, i, 8))));
+        xdbg("instruction: f64_load %f", config->stack.back().GetRef<Value>().to_f64());
+    }
+
+    static void i32_load8_s(Configuration * config, Instruction * i) {
+        config->stack.append(Value(static_cast<int32_t>(I_decode(mem_load(config, i, 1)))));
+        xdbg("instruction: i32_load8_s %d", config->stack.back().GetRef<Value>().to_i32());
+    }
+    static void i32_load8_u(Configuration * config, Instruction * i) {
+        config->stack.append(Value(static_cast<uint32_t>(U_decode(mem_load(config, i, 1)))));
+        xdbg("instruction: i32_load8_u %d", config->stack.back().GetRef<Value>().to_i32());
+    }
+    static void i32_load16_s(Configuration * config, Instruction * i) {
+        config->stack.append(Value(static_cast<int32_t>(I_decode(mem_load(config, i, 2)))));
+        xdbg("instruction: i32_load16_s %d", config->stack.back().GetRef<Value>().to_i32());
+    }
+    static void i32_load16_u(Configuration * config, Instruction * i) {
+        config->stack.append(Value(static_cast<uint32_t>(U_decode(mem_load(config, i, 2)))));
+        xdbg("instruction: i32_load16_u %d", config->stack.back().GetRef<Value>().to_i32());
+    }
+    static void i64_load8_s(Configuration * config, Instruction * i) {
+        config->stack.append(Value(I_decode(mem_load(config, i, 1))));
+        xdbg("instruction: i64_load8_s %lld", config->stack.back().GetRef<Value>().to_i64());
+    }
+    static void i64_load8_u(Configuration * config, Instruction * i) {
+        config->stack.append(Value(U_decode(mem_load(config, i, 1))));
+        xdbg("instruction: i64_load8_u %lld", config->stack.back().GetRef<Value>().to_i64());
+    }
+    static void i64_load16_s(Configuration * config, Instruction * i) {
+        config->stack.append(Value(I_decode(mem_load(config, i, 2))));
+        xdbg("instruction: i64_load16_s %lld", config->stack.back().GetRef<Value>().to_i64());
+    }
+    static void i64_load16_u(Configuration * config, Instruction * i) {
+        config->stack.append(Value(U_decode(mem_load(config, i, 2))));
+        xdbg("instruction: i64_load16_u %lld", config->stack.back().GetRef<Value>().to_i64());
+    }
+    static void i64_load32_s(Configuration * config, Instruction * i) {
+        config->stack.append(Value(I_decode(mem_load(config, i, 4))));
+        xdbg("instruction: i64_load32_s %lld", config->stack.back().GetRef<Value>().to_i64());
+    }
+    static void i64_load32_u(Configuration * config, Instruction * i) {
+        config->stack.append(Value(U_decode(mem_load(config, i, 4))));
+        xdbg("instruction: i64_load32_u %lld", config->stack.back().GetRef<Value>().to_i64());
+    }
+
+    static void mem_store(Configuration * config, Instruction * i, std::size_t size) {
+        auto r = config->stack.pop();
+
         auto memory_addr = config->frame.module->memory_addr_list[0];
-        auto const & memory = config->store->memory_list[memory_addr];
+        auto & memory = config->store->memory_list[memory_addr];
         auto offset = dynamic_cast<args_load_store *>(i->args.get())->data.second;
         auto addr = config->stack.pop().GetRef<Value>().to_i32() + offset;
-        xdbg("instruction: i64_load  addr:%d offset:%d", addr, offset);
+        xdbg("instruction: mem_store  addr:%d offset:%d", addr, offset);
         if (addr < 0 || addr + size > memory.data.size()) {
             // todo  make it exception.
             xerror("cppwasm: out of bounds memory access");
         }
-        byte_vec bv(memory.data.begin() + addr, memory.data.begin() + addr + size);
-        Value r{I_decode(bv)};
-        config->stack.append(r);
-    }
+        auto & mem = memory.data;
+        auto data = r.GetRef<Value>().raw();
 
-    static void mem_store(Configuration * config, Instruction * i, int64_t size) {
+        for (auto index = 0; index < std::min(size, data.size()); ++index) {
+            mem[index + addr] = data[index];
+        }
+
+        //debug
+        printf("------mem store:  ");
+        for (auto index = 0; index < size; ++index) {
+            printf("0x%02x ", mem[index + addr]);
+        }
+        printf("\n");
     }
 
     static void i32_store(Configuration * config, Instruction * i) {
-        std::size_t size = 4;
-        auto r = config->stack.pop();
-
-        auto memory_addr = config->frame.module->memory_addr_list[0];
-        auto & memory = config->store->memory_list[memory_addr];
-        auto offset = dynamic_cast<args_load_store *>(i->args.get())->data.second;
-        auto addr = config->stack.pop().GetRef<Value>().to_i32() + offset;
-        xdbg("instruction: i32_store  addr:%d offset:%d", addr, offset);
-        if (addr < 0 || addr + size > memory.data.size()) {
-            // todo  make it exception.
-            xerror("cppwasm: out of bounds memory access");
-        }
-        auto & mem = memory.data;
-        auto data = I_encode(r.GetRef<Value>().to_i32());
-
-        for (auto index = 0; index < std::min(size, data.size()); ++index) {
-            mem[index + addr] = data[index];
-        }
-        // printf("\n");
-        // for(auto index = 0;index<32;++index){
-        //     printf("0x%02x ",config->store->memory_list[0].data[index]);
-        // }
-        // printf("\n");
+        mem_store(config, i, 4);
     }
 
     static void i64_store(Configuration * config, Instruction * i) {
-        std::size_t size = 8;
-        auto r = config->stack.pop();
+        mem_store(config, i, 8);
+    }
 
-        auto memory_addr = config->frame.module->memory_addr_list[0];
-        auto & memory = config->store->memory_list[memory_addr];
-        auto offset = dynamic_cast<args_load_store *>(i->args.get())->data.second;
-        auto addr = config->stack.pop().GetRef<Value>().to_i32() + offset;
-        xdbg("instruction: i64_store  addr:%d offset:%d", addr, offset);
-        if (addr < 0 || addr + size > memory.data.size()) {
-            // todo  make it exception.
-            xerror("cppwasm: out of bounds memory access");
-        }
-        auto & mem = memory.data;
-        auto data = I_encode(r.GetRef<Value>().to_i64());
-        for (auto index = 0; index < std::min(size, data.size()); ++index) {
-            mem[index + addr] = data[index];
-        }
+    static void f32_store(Configuration * config, Instruction * i) {
+        mem_store(config, i, 4);
     }
 
     static void f64_store(Configuration * config, Instruction * i) {
-        std::size_t size = 8;
-        auto r = config->stack.pop();
+        mem_store(config, i, 8);
+    }
 
-        auto memory_addr = config->frame.module->memory_addr_list[0];
-        auto & memory = config->store->memory_list[memory_addr];
-
-        auto offset = dynamic_cast<args_load_store *>(i->args.get())->data.second;
-        auto addr = config->stack.pop().GetRef<Value>().to_i32() + offset;
-        xdbg("instruction: f64_store  addr:%d offset:%d", addr, offset);
-        if (addr < 0 || addr + size > memory.data.size()) {
-            // todo  make it exception.
-            xerror("cppwasm: out of bounds memory access");
-        }
-        auto & mem = memory.data;
-        // todo check tofloat
-        auto data = I_encode(r.GetRef<Value>().to_f64());
-        mem.insert(mem.begin() + addr, data.begin(), data.begin() + size);
+    static void i32_store8(Configuration * config, Instruction * i) {
+        mem_store(config, i, 1);
+    }
+    static void i32_store16(Configuration * config, Instruction * i) {
+        mem_store(config, i, 2);
+    }
+    static void i64_store8(Configuration * config, Instruction * i) {
+        mem_store(config, i, 4);
+    }
+    static void i64_store16(Configuration * config, Instruction * i) {
+        mem_store(config, i, 2);
+    }
+    static void i64_store32(Configuration * config, Instruction * i) {
+        mem_store(config, i, 4);
     }
 
     static void current_memory(Configuration * config, Instruction * i) {
