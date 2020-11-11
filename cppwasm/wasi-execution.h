@@ -4,6 +4,8 @@
 // #include "wasi-alu.h"
 #include "wasi-binary.h"
 
+#include <cfenv>
+
 using InputType = Variant<int32_t, int64_t, float, double, std::string>;
 #define TYPE_I32 1
 #define TYPE_I64 2
@@ -1822,62 +1824,193 @@ public:
         config->stack.append(c);
     }
     static void f32_abs(Configuration * config, Instruction * i) {
+        xdbg("instruction: f32_abs");
+        auto a = config->stack.pop().GetRef<Value>();
+        a.raw()[3] = a.raw()[3] & 0x7f;
+        config->stack.append(a);
     }
     static void f32_neg(Configuration * config, Instruction * i) {
+        xdbg("instruction: f32_neg");
+        auto a = config->stack.pop().GetRef<Value>();
+        if (a.raw()[3] & 0x80 == 0) {
+            // pos:
+            a.raw()[3] = a.raw()[3] | 0x80;
+        } else {
+            // neg:
+            a.raw()[3] = a.raw()[3] & 0x7f;
+        }
+        config->stack.append(a);
     }
     static void f32_ceil(Configuration * config, Instruction * i) {
+        xdbg("instruction: f32_ceil");
+        auto a = config->stack.pop().GetRef<Value>().to_f32();
+        config->stack.append(Value(std::ceil(a)));
     }
     static void f32_floor(Configuration * config, Instruction * i) {
+        xdbg("instruction: f32_floor");
+        auto a = config->stack.pop().GetRef<Value>().to_f32();
+        config->stack.append(Value(std::floor(a)));
     }
     static void f32_trunc(Configuration * config, Instruction * i) {
+        xdbg("instruction: f32_trunc");
+        auto a = config->stack.pop().GetRef<Value>().to_f32();
+        config->stack.append(Value(std::trunc(a)));
     }
     static void f32_nearest(Configuration * config, Instruction * i) {
+        // todo test if is this work
+        // https://cloud.tencent.com/developer/section/1009475
+        std::fesetround(FE_TONEAREST);
+        xdbg("instruction: f32_nearest");
+        auto a = config->stack.pop().GetRef<Value>().to_f32();
+        config->stack.append(Value(std::nearbyintf(a)));
     }
     static void f32_sqrt(Configuration * config, Instruction * i) {
+        xdbg("instruction: f32_sqrt");
+        auto a = config->stack.pop().GetRef<Value>().to_f32();
+        config->stack.append(Value(std::sqrt(a)));
     }
     static void f32_add(Configuration * config, Instruction * i) {
+        auto b = config->stack.pop().GetRef<Value>().to_f32();
+        auto a = config->stack.pop().GetRef<Value>().to_f32();
+        xdbg("instruction: f32_add [%d + %d = %d]", a, b, a + b);
+        auto c = Value(a + b);
+        config->stack.append(c);
     }
     static void f32_sub(Configuration * config, Instruction * i) {
+        auto b = config->stack.pop().GetRef<Value>().to_f32();
+        auto a = config->stack.pop().GetRef<Value>().to_f32();
+        xdbg("instruction: f32_sub [%d - %d = %d]", a, b, a - b);
+        auto c = Value(a - b);
+        config->stack.append(c);
     }
     static void f32_mul(Configuration * config, Instruction * i) {
+        xdbg("instruction: f32_mul");
+        auto b = config->stack.pop().GetRef<Value>().to_f32();
+        auto a = config->stack.pop().GetRef<Value>().to_f32();
+        auto c = Value(a * b);
+        config->stack.append(c);
     }
     static void f32_div(Configuration * config, Instruction * i) {
+        xdbg("instruction: f32_div");
+        auto b = config->stack.pop().GetRef<Value>().to_f32();
+        auto a = config->stack.pop().GetRef<Value>().to_f32();
+        auto c = Value(a / b);
+        config->stack.append(c);
     }
     static void f32_min(Configuration * config, Instruction * i) {
+        xdbg("instruction: f32_min");
+        auto b = config->stack.pop().GetRef<Value>().to_f32();
+        auto a = config->stack.pop().GetRef<Value>().to_f32();
+        config->stack.append(Value(std::min(a, b)));
     }
     static void f32_max(Configuration * config, Instruction * i) {
+        xdbg("instruction: f32_max");
+        auto b = config->stack.pop().GetRef<Value>().to_f32();
+        auto a = config->stack.pop().GetRef<Value>().to_f32();
+        config->stack.append(Value(std::max(a, b)));
     }
     static void f32_copysign(Configuration * config, Instruction * i) {
+        xdbg("instruction: f32_copysign");
+        auto b = config->stack.pop().GetRef<Value>().to_f32();
+        auto a = config->stack.pop().GetRef<Value>().to_f32();
+        config->stack.append(Value(std::copysignf(a, b)));
     }
     static void f64_abs(Configuration * config, Instruction * i) {
+        xdbg("instruction: f64_abs");
+        auto a = config->stack.pop().GetRef<Value>();
+        a.raw()[7] = a.raw()[7] & 0x7f;
+        config->stack.append(a);
     }
     static void f64_neg(Configuration * config, Instruction * i) {
+        xdbg("instruction: f64_neg");
+        auto a = config->stack.pop().GetRef<Value>();
+        if (a.raw()[7] & 0x80 == 0) {
+            // pos:
+            a.raw()[7] = a.raw()[7] | 0x80;
+        } else {
+            // neg:
+            a.raw()[7] = a.raw()[7] & 0x7f;
+        }
+        config->stack.append(a);
     }
     static void f64_ceil(Configuration * config, Instruction * i) {
+        xdbg("instruction: f64_ceil");
+        auto a = config->stack.pop().GetRef<Value>().to_f64();
+        config->stack.append(Value(std::ceil(a)));
     }
     static void f64_floor(Configuration * config, Instruction * i) {
+        xdbg("instruction: f64_floor");
+        auto a = config->stack.pop().GetRef<Value>().to_f64();
+        config->stack.append(Value(std::floor(a)));
     }
     static void f64_trunc(Configuration * config, Instruction * i) {
+        xdbg("instruction: f64_trunc");
+        auto a = config->stack.pop().GetRef<Value>().to_f64();
+        config->stack.append(Value(std::trunc(a)));
     }
     static void f64_nearest(Configuration * config, Instruction * i) {
+        // todo test if is this work
+        std::fesetround(FE_TONEAREST);
+        xdbg("instruction: f64_nearest");
+        auto a = config->stack.pop().GetRef<Value>().to_f64();
+        config->stack.append(Value(std::nearbyint(a)));
     }
     static void f64_sqrt(Configuration * config, Instruction * i) {
+        xdbg("instruction: f64_sqrt");
+        auto a = config->stack.pop().GetRef<Value>().to_f64();
+        config->stack.append(Value(std::sqrt(a)));
     }
     static void f64_add(Configuration * config, Instruction * i) {
+        auto b = config->stack.pop().GetRef<Value>().to_f64();
+        auto a = config->stack.pop().GetRef<Value>().to_f64();
+        xdbg("instruction: f64_add [%d + %d = %d]", a, b, a + b);
+        auto c = Value(a + b);
+        config->stack.append(c);
     }
     static void f64_sub(Configuration * config, Instruction * i) {
+        auto b = config->stack.pop().GetRef<Value>().to_f64();
+        auto a = config->stack.pop().GetRef<Value>().to_f64();
+        xdbg("instruction: f64_sub [%d - %d = %d]", a, b, a - b);
+        auto c = Value(a - b);
+        config->stack.append(c);
     }
     static void f64_mul(Configuration * config, Instruction * i) {
+        xdbg("instruction: f64_mul");
+        auto b = config->stack.pop().GetRef<Value>().to_f64();
+        auto a = config->stack.pop().GetRef<Value>().to_f64();
+        auto c = Value(a * b);
+        config->stack.append(c);
     }
     static void f64_div(Configuration * config, Instruction * i) {
+        xdbg("instruction: f64_div");
+        auto b = config->stack.pop().GetRef<Value>().to_f64();
+        auto a = config->stack.pop().GetRef<Value>().to_f64();
+        auto c = Value(a / b);
+        config->stack.append(c);
     }
     static void f64_min(Configuration * config, Instruction * i) {
+        xdbg("instruction: f64_min");
+        auto b = config->stack.pop().GetRef<Value>().to_f64();
+        auto a = config->stack.pop().GetRef<Value>().to_f64();
+        config->stack.append(Value(std::min(a, b)));
     }
     static void f64_max(Configuration * config, Instruction * i) {
+        xdbg("instruction: f64_max");
+        auto b = config->stack.pop().GetRef<Value>().to_f64();
+        auto a = config->stack.pop().GetRef<Value>().to_f64();
+        config->stack.append(Value(std::max(a, b)));
     }
     static void f64_copysign(Configuration * config, Instruction * i) {
+        xdbg("instruction: f64_copysign");
+        auto b = config->stack.pop().GetRef<Value>().to_f64();
+        auto a = config->stack.pop().GetRef<Value>().to_f64();
+        config->stack.append(Value(std::copysign(a, b)));
     }
     static void i32_wrap_i64(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_wrap_i64");
+        auto a = config->stack.pop().GetRef<Value>().to_i64();
+        // todo check static_cast ==? wrap
+        config->stack.append(Value(static_cast<int32_t>(a)));
     }
     static void i32_trunc_sf32(Configuration * config, Instruction * i) {
     }
