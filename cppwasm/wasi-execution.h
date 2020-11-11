@@ -673,12 +673,9 @@ public:
         case instruction::f64_const:
             f64_const(config, i);
             break;
-        // todo start
+            // todo start
 
-
-        // todo end
-
-
+            // todo end
 
         case instruction::i32_eqz:
         case instruction::i32_eq:
@@ -1205,7 +1202,7 @@ public:
             mem[index + addr] = data[index];
         }
 
-        //debug
+        // debug
         printf("------mem store:  ");
         for (auto index = 0; index < size; ++index) {
             printf("0x%02x ", mem[index + addr]);
@@ -1525,13 +1522,37 @@ public:
         config->stack.append(Value(res));
     }
 
-
     static void i32_clz(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_clz");
         auto a = config->stack.pop().GetRef<Value>().to_i32();
+        int32_t res = 0;
+        while (res < 32 && ((a & 0x80000000) == 0)) {
+            res++;
+            a <<= 1;
+        }
+        config->stack.append(Value(res));
     }
     static void i32_ctz(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_ctz");
+        auto a = config->stack.pop().GetRef<Value>().to_i32();
+        int32_t res = 0;
+        while (res < 32 && ((a & 0x01) == 0)) {
+            res++;
+            a >>= 1;
+        }
+        config->stack.append(Value(res));
     }
     static void i32_popcnt(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_popcnt");
+        auto a = config->stack.pop().GetRef<Value>().to_i32();
+        int32_t res = 0;
+        for (auto index = 0; index < 32; ++index) {
+            if ((a & 0x01)) {
+                res++;
+            }
+            a >>= 1;
+        }
+        config->stack.append(Value(res));
     }
 
     static void i32_add(Configuration * config, Instruction * i) {
@@ -1562,7 +1583,6 @@ public:
         xdbg("instruction: i32_divs");
         auto b = config->stack.pop().GetRef<Value>().to_i32();
         auto a = config->stack.pop().GetRef<Value>().to_i32();
-        // todo ? exception
         if (b == 0)
             xerror("cppwasm : integer divide by zero");
         auto c = Value(a / b);
@@ -1570,51 +1590,187 @@ public:
     }
 
     static void i32_divu(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_divu");
+        auto b = config->stack.pop().GetRef<Value>().to_u32();
+        auto a = config->stack.pop().GetRef<Value>().to_u32();
+        if (b == 0)
+            xerror("cppwasm : integer divide by zero");
+        auto c = Value(a / b);
+        config->stack.append(c);
     }
     static void i32_rems(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_rems");
+        auto b = config->stack.pop().GetRef<Value>().to_i32();
+        auto a = config->stack.pop().GetRef<Value>().to_i32();
+        if (b == 0)
+            xerror("cppwasm : integer divide by zero");
+        auto c = Value(a * b > 0 ? a % b : -(-a % b));
+        config->stack.append(c);
     }
     static void i32_remu(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_remu");
+        auto b = config->stack.pop().GetRef<Value>().to_u32();
+        auto a = config->stack.pop().GetRef<Value>().to_u32();
+        if (b == 0)
+            xerror("cppwasm : integer divide by zero");
+        auto c = Value(a % b);
+        config->stack.append(c);
     }
     static void i32_and(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_and");
+        auto b = config->stack.pop().GetRef<Value>().to_i32();
+        auto a = config->stack.pop().GetRef<Value>().to_i32();
+        auto c = Value(a & b);
+        config->stack.append(c);
     }
     static void i32_or(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_or");
+        auto b = config->stack.pop().GetRef<Value>().to_i32();
+        auto a = config->stack.pop().GetRef<Value>().to_i32();
+        auto c = Value(a | b);
+        config->stack.append(c);
     }
     static void i32_xor(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_xor");
+        auto b = config->stack.pop().GetRef<Value>().to_i32();
+        auto a = config->stack.pop().GetRef<Value>().to_i32();
+        auto c = Value(a ^ b);
+        config->stack.append(c);
     }
     static void i32_shl(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_shl");
+        auto b = config->stack.pop().GetRef<Value>().to_i32();
+        auto a = config->stack.pop().GetRef<Value>().to_i32();
+        auto c = Value(a << (b % 0x20));
+        config->stack.append(c);
     }
     static void i32_shrs(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_shrs");
+        auto b = config->stack.pop().GetRef<Value>().to_i32();
+        auto a = config->stack.pop().GetRef<Value>().to_i32();
+        auto c = Value(a >> (b % 0x20));
+        config->stack.append(c);
     }
     static void i32_shru(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_shru");
+        auto b = config->stack.pop().GetRef<Value>().to_u32();
+        auto a = config->stack.pop().GetRef<Value>().to_u32();
+        auto c = Value(a >> (b % 0x20));
+        config->stack.append(c);
     }
     static void i32_rotl(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_rotl");
+        auto b = config->stack.pop().GetRef<Value>().to_i32();
+        auto a = config->stack.pop().GetRef<Value>().to_i32();
+        auto c = Value(((a << (b % 0x20)) & 0xffffffff) | (a >> (0x20 - (b % 0x20))));
+        config->stack.append(c);
     }
     static void i32_rotr(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_rotr");
+        auto b = config->stack.pop().GetRef<Value>().to_i32();
+        auto a = config->stack.pop().GetRef<Value>().to_i32();
+        auto c = Value(((a >> (b % 0x20)) | ((a << (0x20 - (b % 0x20))) & 0xffffffff)));
+        config->stack.append(c);
     }
     static void i64_clz(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_clz");
+        auto a = config->stack.pop().GetRef<Value>().to_i64();
+        int64_t res = 0;
+        while (res < 64 && ((a & 0x8000000000000000) == 0)) {
+            res++;
+            a <<= 1;
+        }
+        config->stack.append(Value(res));
     }
     static void i64_ctz(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_ctz");
+        auto a = config->stack.pop().GetRef<Value>().to_i64();
+        int64_t res = 0;
+        while (res < 64 && ((a & 0x01) == 0)) {
+            res++;
+            a >>= 1;
+        }
+        config->stack.append(Value(res));
     }
     static void i64_popcnt(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_popcnt");
+        auto a = config->stack.pop().GetRef<Value>().to_i64();
+        int64_t res = 0;
+        for (auto index = 0; index < 64; ++index) {
+            if ((a & 0x01)) {
+                res++;
+            }
+            a >>= 1;
+        }
+        config->stack.append(Value(res));
     }
     static void i64_add(Configuration * config, Instruction * i) {
+        auto b = config->stack.pop().GetRef<Value>().to_i64();
+        auto a = config->stack.pop().GetRef<Value>().to_i64();
+        xdbg("instruction: i64_add [%d + %d = %d]", a, b, a + b);
+        auto c = Value(a + b);
+        config->stack.append(c);
     }
     static void i64_sub(Configuration * config, Instruction * i) {
+        auto b = config->stack.pop().GetRef<Value>().to_i64();
+        auto a = config->stack.pop().GetRef<Value>().to_i64();
+        xdbg("instruction: i64_sub [%d - %d = %d]", a, b, a - b);
+        auto c = Value(a - b);
+        config->stack.append(c);
     }
     static void i64_mul(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_mul");
+        auto b = config->stack.pop().GetRef<Value>().to_i64();
+        auto a = config->stack.pop().GetRef<Value>().to_i64();
+        auto c = Value(a * b);
+        config->stack.append(c);
     }
     static void i64_divs(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_divs");
+        auto b = config->stack.pop().GetRef<Value>().to_i64();
+        auto a = config->stack.pop().GetRef<Value>().to_i64();
+        if (b == 0)
+            xerror("cppwasm : integer divide by zero");
+        auto c = Value(a / b);
+        config->stack.append(c);
     }
     static void i64_divu(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_divu");
+        auto b = config->stack.pop().GetRef<Value>().to_u64();
+        auto a = config->stack.pop().GetRef<Value>().to_u64();
+        if (b == 0)
+            xerror("cppwasm : integer divide by zero");
+        auto c = Value(a / b);
+        config->stack.append(c);
     }
     static void i64_rems(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_rems");
+        auto b = config->stack.pop().GetRef<Value>().to_i64();
+        auto a = config->stack.pop().GetRef<Value>().to_i64();
+        if (b == 0)
+            xerror("cppwasm : integer divide by zero");
+        auto c = Value(a * b > 0 ? a % b : -(-a % b));
+        config->stack.append(c);
     }
     static void i64_remu(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_remu");
+        auto b = config->stack.pop().GetRef<Value>().to_u64();
+        auto a = config->stack.pop().GetRef<Value>().to_u64();
+        if (b == 0)
+            xerror("cppwasm : integer divide by zero");
+        auto c = Value(a % b);
+        config->stack.append(c);
     }
     static void i64_and(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_and");
+        auto b = config->stack.pop().GetRef<Value>().to_i64();
+        auto a = config->stack.pop().GetRef<Value>().to_i64();
+        auto c = Value(a & b);
+        config->stack.append(c);
     }
 
     static void i64_or(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_or");
         auto b = config->stack.pop().GetRef<Value>().to_i64();
         auto a = config->stack.pop().GetRef<Value>().to_i64();
         auto c = Value(a | b);
@@ -1622,9 +1778,15 @@ public:
     }
 
     static void i64_xor(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_xor");
+        auto b = config->stack.pop().GetRef<Value>().to_i64();
+        auto a = config->stack.pop().GetRef<Value>().to_i64();
+        auto c = Value(a ^ b);
+        config->stack.append(c);
     }
 
     static void i64_shl(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_shl");
         auto b = config->stack.pop().GetRef<Value>().to_i64();
         auto a = config->stack.pop().GetRef<Value>().to_i64();
         auto c = Value(a << (b % 0x40));
@@ -1632,12 +1794,32 @@ public:
     }
 
     static void i64_shrs(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_shrs");
+        auto b = config->stack.pop().GetRef<Value>().to_i64();
+        auto a = config->stack.pop().GetRef<Value>().to_i64();
+        auto c = Value(a >> (b % 0x40));
+        config->stack.append(c);
     }
     static void i64_shru(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_shru");
+        auto b = config->stack.pop().GetRef<Value>().to_u64();
+        auto a = config->stack.pop().GetRef<Value>().to_u64();
+        auto c = Value(a >> (b % 0x40));
+        config->stack.append(c);
     }
     static void i64_rotl(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_rotl");
+        auto b = config->stack.pop().GetRef<Value>().to_i64();
+        auto a = config->stack.pop().GetRef<Value>().to_i64();
+        auto c = Value(((a << (b % 0x20)) & 0xffffffff) | (a >> (0x20 - (b % 0x20))));
+        config->stack.append(c);
     }
     static void i64_rotr(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_rotr");
+        auto b = config->stack.pop().GetRef<Value>().to_i64();
+        auto a = config->stack.pop().GetRef<Value>().to_i64();
+        auto c = Value(((a >> (b % 0x20)) | ((a << (0x20 - (b % 0x20))) & 0xffffffff)));
+        config->stack.append(c);
     }
     static void f32_abs(Configuration * config, Instruction * i) {
     }
