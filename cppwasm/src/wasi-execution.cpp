@@ -60,7 +60,7 @@ Result Configuration::exec() {
         switch (r.GetType()) {
         case STACK_UNIT_VALUE_TYPE:
             res.data.push_back(r.GetRef<Value>());
-            xdbg("Result: %d", r.GetRef<Value>().to_i32());
+            // xdbg("Result: %d", r.GetRef<Value>().to_i32());
             break;
         default:
             xerror("error type  %d in stack should all be Value Result ", r.GetType());

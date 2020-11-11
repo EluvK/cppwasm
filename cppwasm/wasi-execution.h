@@ -581,8 +581,10 @@ public:
             tee_local(config, i);
             break;
         case instruction::get_global:
+            get_global(config, i);
+            break;
         case instruction::set_global:
-            xdbg("instruction: 0x%02x", i->opcode);
+            set_global(config, i);
             break;
         case instruction::i32_load:
             i32_load(config, i);
@@ -671,6 +673,13 @@ public:
         case instruction::f64_const:
             f64_const(config, i);
             break;
+        // todo start
+
+
+        // todo end
+
+
+
         case instruction::i32_eqz:
         case instruction::i32_eq:
         case instruction::i32_ne:
@@ -1205,34 +1214,39 @@ public:
     }
 
     static void i32_store(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_store");
         mem_store(config, i, 4);
     }
-
     static void i64_store(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_store");
         mem_store(config, i, 8);
     }
-
     static void f32_store(Configuration * config, Instruction * i) {
+        xdbg("instruction: f32_store");
         mem_store(config, i, 4);
     }
-
     static void f64_store(Configuration * config, Instruction * i) {
+        xdbg("instruction: f64_store");
         mem_store(config, i, 8);
     }
-
     static void i32_store8(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_store8");
         mem_store(config, i, 1);
     }
     static void i32_store16(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_store16");
         mem_store(config, i, 2);
     }
     static void i64_store8(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_store8");
         mem_store(config, i, 4);
     }
     static void i64_store16(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_store16");
         mem_store(config, i, 2);
     }
     static void i64_store32(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_store32");
         mem_store(config, i, 4);
     }
 
@@ -1271,12 +1285,253 @@ public:
         xdbg("instruction: f64_const %d", config->stack.back().GetRef<Value>().to_f64())
     }
 
+    // i32:
+    static void i32_eqz(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_eqz");
+        int32_t res = (config->stack.pop().GetRef<Value>().to_i32() == 0) ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void i32_eq(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_eq");
+        auto b = config->stack.pop().GetRef<Value>().to_i32();
+        auto a = config->stack.pop().GetRef<Value>().to_i32();
+        int32_t res = a == b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void i32_ne(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_ne");
+        auto b = config->stack.pop().GetRef<Value>().to_i32();
+        auto a = config->stack.pop().GetRef<Value>().to_i32();
+        int32_t res = a != b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void i32_lts(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_lts");
+        auto b = config->stack.pop().GetRef<Value>().to_i32();
+        auto a = config->stack.pop().GetRef<Value>().to_i32();
+        int32_t res = a < b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void i32_ltu(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_ltu");
+        auto b = config->stack.pop().GetRef<Value>().to_u32();
+        auto a = config->stack.pop().GetRef<Value>().to_u32();
+        int32_t res = a < b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void i32_gts(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_gts");
+        auto b = config->stack.pop().GetRef<Value>().to_i32();
+        auto a = config->stack.pop().GetRef<Value>().to_i32();
+        int32_t res = a > b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void i32_gtu(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_gtu");
+        auto b = config->stack.pop().GetRef<Value>().to_u32();
+        auto a = config->stack.pop().GetRef<Value>().to_u32();
+        int32_t res = a > b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void i32_les(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_les");
+        auto b = config->stack.pop().GetRef<Value>().to_i32();
+        auto a = config->stack.pop().GetRef<Value>().to_i32();
+        int32_t res = a <= b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void i32_leu(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_leu");
+        auto b = config->stack.pop().GetRef<Value>().to_u32();
+        auto a = config->stack.pop().GetRef<Value>().to_u32();
+        int32_t res = a <= b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
     static void i32_ges(Configuration * config, Instruction * i) {
         xdbg("instruction: i32_ges");
         auto b = config->stack.pop().GetRef<Value>().to_i32();
         auto a = config->stack.pop().GetRef<Value>().to_i32();
-        int32_t c = a >= b ? 1 : 0;
-        config->stack.append(Value(c));
+        int32_t res = a >= b ? 1 : 0;
+        config->stack.append(Value(res));
+    }
+    static void i32_geu(Configuration * config, Instruction * i) {
+        xdbg("instruction: i32_geu");
+        auto b = config->stack.pop().GetRef<Value>().to_u32();
+        auto a = config->stack.pop().GetRef<Value>().to_u32();
+        int32_t res = a >= b ? 1 : 0;
+        config->stack.append(Value(res));
+    }
+
+    // i64:
+    static void i64_eqz(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_eqz");
+        int32_t res = (config->stack.pop().GetRef<Value>().to_i64() == 0) ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void i64_eq(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_eq");
+        auto b = config->stack.pop().GetRef<Value>().to_i64();
+        auto a = config->stack.pop().GetRef<Value>().to_i64();
+        int32_t res = a == b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void i64_ne(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_ne");
+        auto b = config->stack.pop().GetRef<Value>().to_i64();
+        auto a = config->stack.pop().GetRef<Value>().to_i64();
+        int32_t res = a != b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void i64_lts(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_lts");
+        auto b = config->stack.pop().GetRef<Value>().to_i64();
+        auto a = config->stack.pop().GetRef<Value>().to_i64();
+        int32_t res = a < b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void i64_ltu(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_ltu");
+        auto b = config->stack.pop().GetRef<Value>().to_u64();
+        auto a = config->stack.pop().GetRef<Value>().to_u64();
+        int32_t res = a < b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void i64_gts(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_gts");
+        auto b = config->stack.pop().GetRef<Value>().to_i64();
+        auto a = config->stack.pop().GetRef<Value>().to_i64();
+        int32_t res = a > b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void i64_gtu(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_gtu");
+        auto b = config->stack.pop().GetRef<Value>().to_u64();
+        auto a = config->stack.pop().GetRef<Value>().to_u64();
+        int32_t res = a > b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void i64_les(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_les");
+        auto b = config->stack.pop().GetRef<Value>().to_i64();
+        auto a = config->stack.pop().GetRef<Value>().to_i64();
+        int32_t res = a <= b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void i64_leu(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_leu");
+        auto b = config->stack.pop().GetRef<Value>().to_u64();
+        auto a = config->stack.pop().GetRef<Value>().to_u64();
+        int32_t res = a <= b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void i64_ges(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_ges");
+        auto b = config->stack.pop().GetRef<Value>().to_i64();
+        auto a = config->stack.pop().GetRef<Value>().to_i64();
+        int32_t res = a >= b ? 1 : 0;
+        config->stack.append(Value(res));
+    }
+    static void i64_geu(Configuration * config, Instruction * i) {
+        xdbg("instruction: i64_geu");
+        auto b = config->stack.pop().GetRef<Value>().to_u64();
+        auto a = config->stack.pop().GetRef<Value>().to_u64();
+        int32_t res = a >= b ? 1 : 0;
+        config->stack.append(Value(res));
+    }
+
+    // f32&f64:
+    static void f32_eq(Configuration * config, Instruction * i) {
+        xdbg("instruction: f32_eq");
+        auto b = config->stack.pop().GetRef<Value>().to_f32();
+        auto a = config->stack.pop().GetRef<Value>().to_f32();
+        int32_t res = a == b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void f32_ne(Configuration * config, Instruction * i) {
+        xdbg("instruction: f32_ne");
+        auto b = config->stack.pop().GetRef<Value>().to_f32();
+        auto a = config->stack.pop().GetRef<Value>().to_f32();
+        int32_t res = a != b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void f32_lt(Configuration * config, Instruction * i) {
+        xdbg("instruction: f32_lt");
+        auto b = config->stack.pop().GetRef<Value>().to_f32();
+        auto a = config->stack.pop().GetRef<Value>().to_f32();
+        int32_t res = a < b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void f32_gt(Configuration * config, Instruction * i) {
+        xdbg("instruction: f32_gt");
+        auto b = config->stack.pop().GetRef<Value>().to_f32();
+        auto a = config->stack.pop().GetRef<Value>().to_f32();
+        int32_t res = a > b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void f32_le(Configuration * config, Instruction * i) {
+        xdbg("instruction: f32_le");
+        auto b = config->stack.pop().GetRef<Value>().to_f32();
+        auto a = config->stack.pop().GetRef<Value>().to_f32();
+        int32_t res = a <= b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void f32_ge(Configuration * config, Instruction * i) {
+        xdbg("instruction: f32_ge");
+        auto b = config->stack.pop().GetRef<Value>().to_f32();
+        auto a = config->stack.pop().GetRef<Value>().to_f32();
+        int32_t res = a >= b ? 1 : 0;
+        config->stack.append(Value(res));
+    }
+    static void f64_eq(Configuration * config, Instruction * i) {
+        xdbg("instruction: f64_eq");
+        auto b = config->stack.pop().GetRef<Value>().to_f64();
+        auto a = config->stack.pop().GetRef<Value>().to_f64();
+        int32_t res = a == b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void f64_ne(Configuration * config, Instruction * i) {
+        xdbg("instruction: f64_ne");
+        auto b = config->stack.pop().GetRef<Value>().to_f64();
+        auto a = config->stack.pop().GetRef<Value>().to_f64();
+        int32_t res = a != b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void f64_lt(Configuration * config, Instruction * i) {
+        xdbg("instruction: f64_lt");
+        auto b = config->stack.pop().GetRef<Value>().to_f64();
+        auto a = config->stack.pop().GetRef<Value>().to_f64();
+        int32_t res = a < b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void f64_gt(Configuration * config, Instruction * i) {
+        xdbg("instruction: f64_gt");
+        auto b = config->stack.pop().GetRef<Value>().to_f64();
+        auto a = config->stack.pop().GetRef<Value>().to_f64();
+        int32_t res = a > b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void f64_le(Configuration * config, Instruction * i) {
+        xdbg("instruction: f64_le");
+        auto b = config->stack.pop().GetRef<Value>().to_f64();
+        auto a = config->stack.pop().GetRef<Value>().to_f64();
+        int32_t res = a <= b ? 1 : 0;
+        config->stack.append(Value{res});
+    }
+    static void f64_ge(Configuration * config, Instruction * i) {
+        xdbg("instruction: f64_ge");
+        auto b = config->stack.pop().GetRef<Value>().to_f64();
+        auto a = config->stack.pop().GetRef<Value>().to_f64();
+        int32_t res = a >= b ? 1 : 0;
+        config->stack.append(Value(res));
+    }
+
+
+    static void i32_clz(Configuration * config, Instruction * i) {
+        auto a = config->stack.pop().GetRef<Value>().to_i32();
+    }
+    static void i32_ctz(Configuration * config, Instruction * i) {
+    }
+    static void i32_popcnt(Configuration * config, Instruction * i) {
     }
 
     static void i32_add(Configuration * config, Instruction * i) {
@@ -1314,11 +1569,59 @@ public:
         config->stack.append(c);
     }
 
+    static void i32_divu(Configuration * config, Instruction * i) {
+    }
+    static void i32_rems(Configuration * config, Instruction * i) {
+    }
+    static void i32_remu(Configuration * config, Instruction * i) {
+    }
+    static void i32_and(Configuration * config, Instruction * i) {
+    }
+    static void i32_or(Configuration * config, Instruction * i) {
+    }
+    static void i32_xor(Configuration * config, Instruction * i) {
+    }
+    static void i32_shl(Configuration * config, Instruction * i) {
+    }
+    static void i32_shrs(Configuration * config, Instruction * i) {
+    }
+    static void i32_shru(Configuration * config, Instruction * i) {
+    }
+    static void i32_rotl(Configuration * config, Instruction * i) {
+    }
+    static void i32_rotr(Configuration * config, Instruction * i) {
+    }
+    static void i64_clz(Configuration * config, Instruction * i) {
+    }
+    static void i64_ctz(Configuration * config, Instruction * i) {
+    }
+    static void i64_popcnt(Configuration * config, Instruction * i) {
+    }
+    static void i64_add(Configuration * config, Instruction * i) {
+    }
+    static void i64_sub(Configuration * config, Instruction * i) {
+    }
+    static void i64_mul(Configuration * config, Instruction * i) {
+    }
+    static void i64_divs(Configuration * config, Instruction * i) {
+    }
+    static void i64_divu(Configuration * config, Instruction * i) {
+    }
+    static void i64_rems(Configuration * config, Instruction * i) {
+    }
+    static void i64_remu(Configuration * config, Instruction * i) {
+    }
+    static void i64_and(Configuration * config, Instruction * i) {
+    }
+
     static void i64_or(Configuration * config, Instruction * i) {
         auto b = config->stack.pop().GetRef<Value>().to_i64();
         auto a = config->stack.pop().GetRef<Value>().to_i64();
         auto c = Value(a | b);
         config->stack.append(c);
+    }
+
+    static void i64_xor(Configuration * config, Instruction * i) {
     }
 
     static void i64_shl(Configuration * config, Instruction * i) {
@@ -1328,10 +1631,122 @@ public:
         config->stack.append(c);
     }
 
+    static void i64_shrs(Configuration * config, Instruction * i) {
+    }
+    static void i64_shru(Configuration * config, Instruction * i) {
+    }
+    static void i64_rotl(Configuration * config, Instruction * i) {
+    }
+    static void i64_rotr(Configuration * config, Instruction * i) {
+    }
+    static void f32_abs(Configuration * config, Instruction * i) {
+    }
+    static void f32_neg(Configuration * config, Instruction * i) {
+    }
+    static void f32_ceil(Configuration * config, Instruction * i) {
+    }
+    static void f32_floor(Configuration * config, Instruction * i) {
+    }
+    static void f32_trunc(Configuration * config, Instruction * i) {
+    }
+    static void f32_nearest(Configuration * config, Instruction * i) {
+    }
+    static void f32_sqrt(Configuration * config, Instruction * i) {
+    }
+    static void f32_add(Configuration * config, Instruction * i) {
+    }
+    static void f32_sub(Configuration * config, Instruction * i) {
+    }
+    static void f32_mul(Configuration * config, Instruction * i) {
+    }
+    static void f32_div(Configuration * config, Instruction * i) {
+    }
+    static void f32_min(Configuration * config, Instruction * i) {
+    }
+    static void f32_max(Configuration * config, Instruction * i) {
+    }
+    static void f32_copysign(Configuration * config, Instruction * i) {
+    }
+    static void f64_abs(Configuration * config, Instruction * i) {
+    }
+    static void f64_neg(Configuration * config, Instruction * i) {
+    }
+    static void f64_ceil(Configuration * config, Instruction * i) {
+    }
+    static void f64_floor(Configuration * config, Instruction * i) {
+    }
+    static void f64_trunc(Configuration * config, Instruction * i) {
+    }
+    static void f64_nearest(Configuration * config, Instruction * i) {
+    }
+    static void f64_sqrt(Configuration * config, Instruction * i) {
+    }
+    static void f64_add(Configuration * config, Instruction * i) {
+    }
+    static void f64_sub(Configuration * config, Instruction * i) {
+    }
+    static void f64_mul(Configuration * config, Instruction * i) {
+    }
+    static void f64_div(Configuration * config, Instruction * i) {
+    }
+    static void f64_min(Configuration * config, Instruction * i) {
+    }
+    static void f64_max(Configuration * config, Instruction * i) {
+    }
+    static void f64_copysign(Configuration * config, Instruction * i) {
+    }
+    static void i32_wrap_i64(Configuration * config, Instruction * i) {
+    }
+    static void i32_trunc_sf32(Configuration * config, Instruction * i) {
+    }
+    static void i32_trunc_uf32(Configuration * config, Instruction * i) {
+    }
+    static void i32_trunc_sf64(Configuration * config, Instruction * i) {
+    }
+    static void i32_trunc_uf64(Configuration * config, Instruction * i) {
+    }
+    static void i64_extend_si32(Configuration * config, Instruction * i) {
+    }
     static void i64_extend_ui32(Configuration * config, Instruction * i) {
         xdbg("instruction: i64_extend_ui32");
         auto a = config->stack.pop().GetRef<Value>().to_u32();
         config->stack.append(Value(a));
+    }
+    static void i64_trunc_sf32(Configuration * config, Instruction * i) {
+    }
+    static void i64_trunc_uf32(Configuration * config, Instruction * i) {
+    }
+    static void i64_trunc_sf64(Configuration * config, Instruction * i) {
+    }
+    static void i64_trunc_uf64(Configuration * config, Instruction * i) {
+    }
+    static void f32_convert_si32(Configuration * config, Instruction * i) {
+    }
+    static void f32_convert_ui32(Configuration * config, Instruction * i) {
+    }
+    static void f32_convert_si64(Configuration * config, Instruction * i) {
+    }
+    static void f32_convert_ui64(Configuration * config, Instruction * i) {
+    }
+    static void f32_demote_f64(Configuration * config, Instruction * i) {
+    }
+    static void f64_convert_si32(Configuration * config, Instruction * i) {
+    }
+    static void f64_convert_ui32(Configuration * config, Instruction * i) {
+    }
+    static void f64_convert_si64(Configuration * config, Instruction * i) {
+    }
+    static void f64_convert_ui64(Configuration * config, Instruction * i) {
+    }
+    static void f64_promote_f32(Configuration * config, Instruction * i) {
+    }
+    static void i32_reinterpret_f32(Configuration * config, Instruction * i) {
+    }
+    static void i64_reinterpret_f64(Configuration * config, Instruction * i) {
+    }
+    static void f32_reinterpret_i32(Configuration * config, Instruction * i) {
+    }
+    static void f64_reinterpret_i64(Configuration * config, Instruction * i) {
     }
 };
 

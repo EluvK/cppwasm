@@ -478,10 +478,7 @@ public:
     Instruction(){};
 
     byte opcode;
-    // std::vector<args_ptr> args;
     args_ptr args;
-    // args
-    // std::vector<Ins_args_ptr>
 
     static Instruction GetInstruction(byte_IO & BinaryIO) {
         Instruction o;
@@ -597,13 +594,12 @@ public:
         }
 
         case instruction::f64_const:{
-            auto f32 = F64_decode_reader(BinaryIO);
-            o.args = std::make_shared<args_f64_count>(f32);
+            auto f64 = F64_decode_reader(BinaryIO);
+            o.args = std::make_shared<args_f64_count>(f64);
             break;
         }
-
-        default:
-            xdbg("unknow instruction: 0x%02x", o.opcode);
+        // default:
+        //     xdbg("unknow instruction: 0x%02x", o.opcode);
         }
         return o;
     };
