@@ -1096,6 +1096,71 @@ public:
         glob.value = config->stack.pop().GetConstRef<Value>();
     }
 
+    static int32_t byte2i32(byte_vec input) {
+        int32_t res = 0;
+        for (int index = input.size() - 1; index >= 0; index--) {
+            res <<= 8;
+            res |= input[index];
+        }
+        return res;
+    }
+
+    static int32_t ext32s(byte_vec input) {
+        ASSERT(input.size() <= 4, "no need ext");
+        auto res = input;
+        bool sign = input[0] & 0x80;  // true - 1 false - 0
+        if (sign) {
+            while (res.size() < 4) {
+                res.push_back(0xff);
+            }
+        } else {
+            while (res.size() < 4) {
+                res.push_back(0x00);
+            }
+        }
+        return byte2i32(res);
+    }
+    static int32_t ext32u(byte_vec input) {
+        ASSERT(input.size() <= 4, "no need ext");
+        auto res = input;
+        while (res.size() < 4) {
+            res.push_back(0x00);
+        }
+        return byte2i32(res);
+    }
+
+    static int64_t byte2i64(byte_vec input) {
+        int64_t res = 0;
+        for (int index = input.size() - 1; index >= 0; index--) {
+            res <<= 8;
+            res |= input[index];
+        }
+        return res;
+    }
+    static int64_t ext64s(byte_vec input) {
+        ASSERT(input.size() <= 8, "no need ext");
+        auto res = input;
+        bool sign = input[0] & 0x80;  // true - 1 false - 0
+        if (sign) {
+            while (res.size() < 8) {
+                res.push_back(0xff);
+            }
+        } else {
+            while (res.size() < 8) {
+                res.push_back(0x00);
+            }
+        }
+        return byte2i64(res);
+    }
+    static int64_t ext64u(byte_vec input) {
+        ASSERT(input.size() <= 8, "no need ext");
+        auto res = input;
+        while (res.size() < 8) {
+            res.push_back(0x00);
+        }
+        return byte2i64(res);
+    }
+
     static byte_vec mem_load(Configuration * config, Instruction * i, std::size_t size) {
         byte_vec res{};
 
@@ -1125,12 +1190,12 @@ public:
     }
 
     static void i32_load(Configuration * config, Instruction * i) {
-        config->stack.append(Value(I_decode(mem_load(config, i, 4))));
+        config->stack.append(Value(ext32s(mem_load(config, i, 4))));
         xdbg("instruction: i32_load %d", config->stack.back().GetRef<Value>().to_i32());
     }
 
     static void i64_load(Configuration * config, Instruction * i) {
-        config->stack.append(Value(I_decode(mem_load(config, i, 8))));
+        config->stack.append(Value(ext64s(mem_load(config, i, 8))));
         xdbg("instruction: i64_load %d", config->stack.back().GetRef<Value>().to_i64());
     }
 
@@ -1145,43 +1210,43 @@ public:
     }
 
     static void i32_load8_s(Configuration * config, Instruction * i) {
-        config->stack.append(Value(static_cast<int32_t>(I_decode(mem_load(config, i, 1)))));
+        config->stack.append(Value(ext32s(mem_load(config, i, 1))));
         xdbg("instruction: i32_load8_s %d", config->stack.back().GetRef<Value>().to_i32());
     }
     static void i32_load8_u(Configuration * config, Instruction * i) {
-        config->stack.append(Value(static_cast<uint32_t>(U_decode(mem_load(config, i, 1)))));
+        config->stack.append(Value(ext32u(mem_load(config, i, 1))));
         xdbg("instruction: i32_load8_u %d", config->stack.back().GetRef<Value>().to_i32());
     }
     static void i32_load16_s(Configuration * config, Instruction * i) {
-        config->stack.append(Value(static_cast<int32_t>(I_decode(mem_load(config, i, 2)))));
+        config->stack.append(Value(ext32s(mem_load(config, i, 2))));
         xdbg("instruction: i32_load16_s %d", config->stack.back().GetRef<Value>().to_i32());
     }
     static void i32_load16_u(Configuration * config, Instruction * i) {
-        config->stack.append(Value(static_cast<uint32_t>(U_decode(mem_load(config, i, 2)))));
+        config->stack.append(Value(ext32u(mem_load(config, i, 2))));
         xdbg("instruction: i32_load16_u %d", config->stack.back().GetRef<Value>().to_i32());
     }
     static void i64_load8_s(Configuration * config, Instruction * i) {
-        config->stack.append(Value(I_decode(mem_load(config, i, 1))));
+        config->stack.append(Value(ext64s(mem_load(config, i, 1))));
         xdbg("instruction: i64_load8_s %lld", config->stack.back().GetRef<Value>().to_i64());
     }
     static void i64_load8_u(Configuration * config, Instruction * i) {
-        config->stack.append(Value(U_decode(mem_load(config, i, 1))));
-        xdbg("instruction: i64_load8_u %lld", config->stack.back().GetRef<Value>().to_i64());
+        config->stack.append(Value(ext64u(mem_load(config, i, 1))));
+        xdbg("instruction: i64_load8_u %lld", config->stack.back().GetRef<Value>().to_u64());
     }
     static void i64_load16_s(Configuration * config, Instruction * i) {
-        config->stack.append(Value(I_decode(mem_load(config, i, 2))));
+        config->stack.append(Value(ext64s(mem_load(config, i, 2))));
         xdbg("instruction: i64_load16_s %lld", config->stack.back().GetRef<Value>().to_i64());
     }
     static void i64_load16_u(Configuration * config, Instruction * i) {
-        config->stack.append(Value(U_decode(mem_load(config, i, 2))));
+        config->stack.append(Value(ext64u(mem_load(config, i, 2))));
         xdbg("instruction: i64_load16_u %lld", config->stack.back().GetRef<Value>().to_i64());
     }
     static void i64_load32_s(Configuration * config, Instruction * i) {
-        config->stack.append(Value(I_decode(mem_load(config, i, 4))));
+        config->stack.append(Value(ext64s(mem_load(config, i, 4))));
         xdbg("instruction: i64_load32_s %lld", config->stack.back().GetRef<Value>().to_i64());
     }
     static void i64_load32_u(Configuration * config, Instruction * i) {
-        config->stack.append(Value(U_decode(mem_load(config, i, 4))));
+        config->stack.append(Value(ext64u(mem_load(config, i, 4))));
         xdbg("instruction: i64_load32_u %lld", config->stack.back().GetRef<Value>().to_i64());
     }
 

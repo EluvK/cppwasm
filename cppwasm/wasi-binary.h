@@ -1348,6 +1348,7 @@ public:
  */
 class Module {
 public:
+    Module(){};
     Module(const char * file_path) {
         unsigned char * bytes;
         uint32_t bytes_size;

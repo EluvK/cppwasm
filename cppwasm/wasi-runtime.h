@@ -4,6 +4,7 @@
 
 class Runtime {
 public:
+    Runtime(){}
     Runtime(Module const & module, std::map<std::string, std::map<std::string, host_func_base_ptr>> & imps) : machine{} {
         // todo import_list?
         std::vector<ExternValue> extern_value_list;
