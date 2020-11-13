@@ -1089,9 +1089,10 @@ public:
     static StartFunction GetStartFunction(byte_IO & BinaryIO) {
         StartFunction res{};
         res.function_index = GetFunctionIndex(BinaryIO);
+        res.exit = true;
         return res;
     }
-
+    bool exit{false};
     FunctionIndex function_index;
 };
 
@@ -1436,9 +1437,13 @@ public:
                 export_list = Export_section.data;
                 break;
             case START_SECTION_INDEX:
+                if (start.exit) {
+                    xerror("cppwasm: junk after last section");
+                }
                 xdbg("distribute START section(%d): size: %d", START_SECTION_INDEX, sz);
                 Start_section = StartSection::GetStartSection(sectionIO);
-                xerror("cppwasm:should not have start section");
+                start = Start_section.start;
+                // xerror("cppwasm:should not have start section");
                 break;
             case ELEMENT_SECTION_INDEX:
                 xdbg("distribute ELEMENT section(%d): size: %d", ELEMENT_SECTION_INDEX, sz);
@@ -1497,7 +1502,7 @@ public:
     std::vector<Global> global_list{};
     std::vector<Element> element_list{};
     std::vector<Data> data_list{};
-    std::vector<StartFunction> start{};
+    StartFunction start;
     std::vector<Import> import_list{};
     std::vector<Export> export_list{};
 };
