@@ -1328,9 +1328,9 @@ public:
     static int32_t ext32s(byte_vec input) {
         ASSERT(input.size() <= 4, "no need ext");
         auto res = input;
-        for (auto b : input)
-            xdbg("input: 0x%02x", b);
-        bool sign = input[0] & 0x80;  // true - 1 false - 0
+        // for (auto b : input)
+        //     xdbg(" input: 0x%02x ", b);
+        bool sign = input.back() & 0x80;  // true - 1 false - 0
         if (sign) {
             while (res.size() < 4) {
                 res.push_back(0xff);
@@ -1362,7 +1362,7 @@ public:
     static int64_t ext64s(byte_vec input) {
         ASSERT(input.size() <= 8, "no need ext");
         auto res = input;
-        bool sign = input[0] & 0x80;  // true - 1 false - 0
+        bool sign = input.back() & 0x80;  // true - 1 false - 0
         if (sign) {
             while (res.size() < 8) {
                 res.push_back(0xff);
@@ -2325,15 +2325,13 @@ public:
     }
     static void i64_extend_si32(Configuration * config, Instruction * i) {
         xdbg("instruction: i64_extend_si32");
-        auto a = config->stack.pop().GetRef<Value>().to_i32();
-        auto r = static_cast<int64_t>(a);
-        config->stack.append(Value(r));
+        auto a = config->stack.pop().GetRef<Value>().raw();
+        config->stack.append(Value(ext64s(a)));
     }
     static void i64_extend_ui32(Configuration * config, Instruction * i) {
         xdbg("instruction: i64_extend_ui32");
-        auto a = config->stack.pop().GetRef<Value>().to_i32();
-        auto r = static_cast<uint64_t>(a);
-        config->stack.append(Value(r));
+        auto a = config->stack.pop().GetRef<Value>().raw();
+        config->stack.append(Value(ext64u(a)));
     }
     static void i64_trunc_sf32(Configuration * config, Instruction * i) {
         xdbg("instruction: i64_trunc_sf32");

@@ -52,7 +52,7 @@ Result Configuration::exec() {
     }
     auto _arity = frame.arity;
     Result res;
-    xdbg(" exec result: stack len: %d arity: %d", stack.len(), _arity);
+    // xdbg(" exec result: stack len: %d arity: %d", stack.len(), _arity);
     while (_arity--) {
         // xdbg("  stack len:%d", stack.len());
         auto r = stack.pop();
