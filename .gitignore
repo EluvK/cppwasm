@@ -1,4 +1,4 @@
 /cbuild
 /.vscode
-/.clang-format
+# /.clang-format
 /example/emcc

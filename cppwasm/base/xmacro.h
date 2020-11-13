@@ -12,8 +12,10 @@
     {                                                                                                                                                                              \
         fprintf(stderr, "Error(%s:%d): ", __FILE__, __LINE__);                                                                                                                     \
         fprintf(stderr, __VA_ARGS__);                                                                                                                                              \
-        exit(1);                                                                                                                                                                   \
+        printf("\n");                                                                                                                                                              \
+        throw(__VA_ARGS__);                                                                                                                                                        \
     }
+// exit(1);
 #define xwarn(...) fprintf(stderr, __VA_ARGS__);
 
 #define ASSERT(exp, ...)                                                                                                                                                           \

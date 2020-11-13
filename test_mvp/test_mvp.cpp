@@ -174,21 +174,8 @@ void test_case(std::string directory) {
     }
 }
 
-
-
-
-
-TEST(test_, address) {
-    // int64_t val = -1;
-    // auto bv = I_encode(val);
-    // for (auto b : bv) {
-    //     xdbg("0x%02x", b);
-    // }
-    // val = 4294967295;
-    // bv = I_encode(val);
-    // for (auto b : bv) {
-    //     xdbg("0x%02x", b);
-    // }
-    
-    test_case("../spectest/endianness");
+TEST(test_, mvp) {
+    test_case("../spectest/address");
+    // test_case("../spectest/endianness");
 }
+

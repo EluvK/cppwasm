@@ -16,7 +16,8 @@ static uint64_t U_decode(byte_vec const & bv) {
     uint64_t res{0};
     int32_t offset{0};
     for (auto & b : bv) {
-        res += ((b & 0x7f) << offset);
+        uint64_t u64 = b;
+        res += ((u64 & 0x7f) << offset);
         offset += 7;
     }
     return res;
@@ -51,7 +52,8 @@ static int64_t I_decode(byte_vec const & bv) {
     int32_t offset{0};
     byte last_byte{};
     for (auto & b : bv) {
-        res += ((b & 0x7f) << offset);
+        int64_t u64 = b;
+        res += ((u64 & 0x7f) << offset);
         offset += 7;
         last_byte = b;
     }

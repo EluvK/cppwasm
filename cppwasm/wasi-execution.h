@@ -3,6 +3,7 @@
 #include "base/wasi-define.h"
 // #include "wasi-alu.h"
 #include "wasi-binary.h"
+#include "LittleEndian.h"
 
 #include <cfenv>
 
@@ -19,38 +20,38 @@ public:
     }
     Value(byte_vec bv) : raw_data{bv} {
     }
-    Value(int32_t i32) : raw_data{I_encode(i32)} {
+    Value(int32_t i32) : raw_data{LittleEndian::pack_i32(i32)} {
     }
-    Value(int64_t i64) : raw_data{I_encode(i64)} {
+    Value(int64_t i64) : raw_data{LittleEndian::pack_i64(i64)} {
     }
-    Value(uint32_t u32) : raw_data{U_encode(u32)} {
+    Value(uint32_t u32) : raw_data{LittleEndian::pack_u32(u32)} {
     }
-    Value(uint64_t u64) : raw_data{U_encode(u64)} {
+    Value(uint64_t u64) : raw_data{LittleEndian::pack_u64(u64)} {
     }
-    Value(float f32) : raw_data{F32_encode(f32)} {
+    Value(float f32) : raw_data{LittleEndian::pack_f32(f32)} {
     }
-    Value(double f64) : raw_data{F64_encode(f64)} {
+    Value(double f64) : raw_data{LittleEndian::pack_f64(f64)} {
     }
     Value(std::string str) : raw_data{S_encode(str)} {
     }
 
     int32_t to_i32() {
-        return static_cast<int32_t>(I_decode(raw_data));
+        return LittleEndian::i32({raw_data.begin(), raw_data.begin() + 4});
     }
     int64_t to_i64() {
-        return I_decode(raw_data);
+        return LittleEndian::i64({raw_data.begin(), raw_data.begin() + 8});
     }
     uint32_t to_u32() {
-        return static_cast<uint32_t>(U_decode(raw_data));
+        return LittleEndian::u32({raw_data.begin(), raw_data.begin() + 4});
     }
     uint64_t to_u64() {
-        return U_decode(raw_data);
+        return LittleEndian::u64({raw_data.begin(), raw_data.begin() + 8});
     }
     float to_f32() {
-        return F32_decode(raw_data);
+        return LittleEndian::f32({raw_data.begin(), raw_data.begin() + 4});
     }
     double to_f64() {
-        return F64_decode(raw_data);
+        return LittleEndian::f64({raw_data.begin(), raw_data.begin() + 8});
     }
     std::string to_string() {
         return S_decode(raw_data);
@@ -72,7 +73,7 @@ public:
         case TYPE_STR:
             return Value(data.GetConstRef<std::string>());
         default:
-            xerror("cppwasm unknow input type");
+            xerror("cppwasm:unknow input type");
         }
     }
 
@@ -259,11 +260,11 @@ public:
         // grow n page memory
         if (type.limits.m && size + n > type.limits.n) {
             // todo can add memory limit test;
-            xerror("pywasm: out of memory limit");
+            xerror("cppwasm: out of memory limit");
         }
         // todo make it static const 2^16 memory_page
         if (size + n > 65536) {
-            xerror("pywasm: out of memory limit");
+            xerror("cppwasm: out of memory limit");
         }
 
         size += n;
@@ -422,7 +423,7 @@ public:
     }
     stack_unit pop() {
         if (!data.size())
-            xerror("cppwasm empty stack!");
+            xerror("cppwasm:empty stack!");
         auto u = data.back();
         data.pop_back();
         return u;
@@ -675,52 +676,116 @@ public:
         case instruction::f64_const:
             f64_const(config, i);
             break;
-            // todo start
-
-            // todo end
-
         case instruction::i32_eqz:
+            i32_eqz(config, i);
+            break;
         case instruction::i32_eq:
+            i32_eq(config, i);
+            break;
         case instruction::i32_ne:
+            i32_ne(config, i);
+            break;
         case instruction::i32_lts:
+            i32_lts(config, i);
+            break;
         case instruction::i32_ltu:
+            i32_ltu(config, i);
+            break;
         case instruction::i32_gts:
+            i32_gts(config, i);
+            break;
         case instruction::i32_gtu:
+            i32_gtu(config, i);
+            break;
         case instruction::i32_les:
+            i32_les(config, i);
+            break;
         case instruction::i32_leu:
-            xdbg("instruction: 0x%02x", i->opcode);
+            i32_leu(config, i);
             break;
         case instruction::i32_ges:
             i32_ges(config, i);
             break;
         case instruction::i32_geu:
+            i32_geu(config, i);
+            break;
         case instruction::i64_eqz:
+            i64_eqz(config, i);
+            break;
         case instruction::i64_eq:
+            i64_eq(config, i);
+            break;
         case instruction::i64_ne:
+            i64_ne(config, i);
+            break;
         case instruction::i64_lts:
+            i64_lts(config, i);
+            break;
         case instruction::i64_ltu:
+            i64_ltu(config, i);
+            break;
         case instruction::i64_gts:
+            i64_gts(config, i);
+            break;
         case instruction::i64_gtu:
+            i64_gtu(config, i);
+            break;
         case instruction::i64_les:
+            i64_les(config, i);
+            break;
         case instruction::i64_leu:
+            i64_leu(config, i);
+            break;
         case instruction::i64_ges:
+            i64_ges(config, i);
+            break;
         case instruction::i64_geu:
+            i64_geu(config, i);
+            break;
         case instruction::f32_eq:
+            f32_eq(config, i);
+            break;
         case instruction::f32_ne:
+            f32_ne(config, i);
+            break;
         case instruction::f32_lt:
+            f32_lt(config, i);
+            break;
         case instruction::f32_gt:
+            f32_gt(config, i);
+            break;
         case instruction::f32_le:
+            f32_le(config, i);
+            break;
         case instruction::f32_ge:
+            f32_ge(config, i);
+            break;
         case instruction::f64_eq:
+            f64_eq(config, i);
+            break;
         case instruction::f64_ne:
+            f64_ne(config, i);
+            break;
         case instruction::f64_lt:
+            f64_lt(config, i);
+            break;
         case instruction::f64_gt:
+            f64_gt(config, i);
+            break;
         case instruction::f64_le:
+            f64_le(config, i);
+            break;
         case instruction::f64_ge:
+            f64_ge(config, i);
+            break;
         case instruction::i32_clz:
+            i32_clz(config, i);
+            break;
         case instruction::i32_ctz:
+            i32_ctz(config, i);
+            break;
         case instruction::i32_popcnt:
-            xdbg("instruction: 0x%02x", i->opcode);
+            i32_popcnt(config, i);
             break;
         case instruction::i32_add:
             i32_add(config, i);
@@ -733,101 +798,254 @@ public:
             break;
         case instruction::i32_divs:
             i32_divs(config, i);
+            break;
         case instruction::i32_divu:
+            i32_divu(config, i);
+            break;
         case instruction::i32_rems:
+            i32_rems(config, i);
+            break;
         case instruction::i32_remu:
+            i32_remu(config, i);
+            break;
         case instruction::i32_and:
+            i32_and(config, i);
+            break;
         case instruction::i32_or:
+            i32_or(config, i);
+            break;
         case instruction::i32_xor:
+            i32_xor(config, i);
+            break;
         case instruction::i32_shl:
+            i32_shl(config, i);
+            break;
         case instruction::i32_shrs:
+            i32_shrs(config, i);
+            break;
         case instruction::i32_shru:
+            i32_shru(config, i);
+            break;
         case instruction::i32_rotl:
+            i32_rotl(config, i);
+            break;
         case instruction::i32_rotr:
+            i32_rotr(config, i);
+            break;
         case instruction::i64_clz:
+            i64_clz(config, i);
+            break;
         case instruction::i64_ctz:
+            i64_ctz(config, i);
+            break;
         case instruction::i64_popcnt:
+            i64_popcnt(config, i);
+            break;
         case instruction::i64_add:
+            i64_add(config, i);
+            break;
         case instruction::i64_sub:
+            i64_sub(config, i);
+            break;
         case instruction::i64_mul:
+            i64_mul(config, i);
+            break;
         case instruction::i64_divs:
+            i64_divs(config, i);
+            break;
         case instruction::i64_divu:
+            i64_divu(config, i);
+            break;
         case instruction::i64_rems:
+            i64_rems(config, i);
+            break;
         case instruction::i64_remu:
+            i64_remu(config, i);
+            break;
         case instruction::i64_and:
-            xdbg("instruction: 0x%02x", i->opcode);
+            i64_and(config, i);
             break;
         case instruction::i64_or:
             i64_or(config, i);
             break;
         case instruction::i64_xor:
-            xdbg("instruction: 0x%02x", i->opcode);
+            i64_xor(config, i);
             break;
         case instruction::i64_shl:
             i64_shl(config, i);
             break;
         case instruction::i64_shrs:
+            i64_shrs(config, i);
+            break;
         case instruction::i64_shru:
+            i64_shru(config, i);
+            break;
         case instruction::i64_rotl:
+            i64_rotl(config, i);
+            break;
         case instruction::i64_rotr:
+            i64_rotr(config, i);
+            break;
         case instruction::f32_abs:
+            f32_abs(config, i);
+            break;
         case instruction::f32_neg:
+            f32_neg(config, i);
+            break;
         case instruction::f32_ceil:
+            f32_ceil(config, i);
+            break;
         case instruction::f32_floor:
+            f32_floor(config, i);
+            break;
         case instruction::f32_trunc:
+            f32_trunc(config, i);
+            break;
         case instruction::f32_nearest:
+            f32_nearest(config, i);
+            break;
         case instruction::f32_sqrt:
+            f32_sqrt(config, i);
+            break;
         case instruction::f32_add:
+            f32_add(config, i);
+            break;
         case instruction::f32_sub:
+            f32_sub(config, i);
+            break;
         case instruction::f32_mul:
+            f32_mul(config, i);
+            break;
         case instruction::f32_div:
+            f32_div(config, i);
+            break;
         case instruction::f32_min:
+            f32_min(config, i);
+            break;
         case instruction::f32_max:
+            f32_max(config, i);
+            break;
         case instruction::f32_copysign:
+            f32_copysign(config, i);
+            break;
         case instruction::f64_abs:
+            f64_abs(config, i);
+            break;
         case instruction::f64_neg:
+            f64_neg(config, i);
+            break;
         case instruction::f64_ceil:
+            f64_ceil(config, i);
+            break;
         case instruction::f64_floor:
+            f64_floor(config, i);
+            break;
         case instruction::f64_trunc:
+            f64_trunc(config, i);
+            break;
         case instruction::f64_nearest:
+            f64_nearest(config, i);
+            break;
         case instruction::f64_sqrt:
+            f64_sqrt(config, i);
+            break;
         case instruction::f64_add:
+            f64_add(config, i);
+            break;
         case instruction::f64_sub:
+            f64_sub(config, i);
+            break;
         case instruction::f64_mul:
+            f64_mul(config, i);
+            break;
         case instruction::f64_div:
+            f64_div(config, i);
+            break;
         case instruction::f64_min:
+            f64_min(config, i);
+            break;
         case instruction::f64_max:
+            f64_max(config, i);
+            break;
         case instruction::f64_copysign:
+            f64_copysign(config, i);
+            break;
         case instruction::i32_wrap_i64:
+            i32_wrap_i64(config, i);
+            break;
         case instruction::i32_trunc_sf32:
+            i32_trunc_sf32(config, i);
+            break;
         case instruction::i32_trunc_uf32:
+            i32_trunc_uf32(config, i);
+            break;
         case instruction::i32_trunc_sf64:
+            i32_trunc_sf64(config, i);
+            break;
         case instruction::i32_trunc_uf64:
+            i32_trunc_uf64(config, i);
+            break;
         case instruction::i64_extend_si32:
-            xdbg("instruction: 0x%02x", i->opcode);
+            i64_extend_si32(config, i);
             break;
         case instruction::i64_extend_ui32:
             i64_extend_ui32(config, i);
             break;
         case instruction::i64_trunc_sf32:
+            i64_trunc_sf32(config, i);
+            break;
         case instruction::i64_trunc_uf32:
+            i64_trunc_uf32(config, i);
+            break;
         case instruction::i64_trunc_sf64:
+            i64_trunc_sf64(config, i);
+            break;
         case instruction::i64_trunc_uf64:
+            i64_trunc_uf64(config, i);
+            break;
         case instruction::f32_convert_si32:
+            f32_convert_si32(config, i);
+            break;
         case instruction::f32_convert_ui32:
+            f32_convert_ui32(config, i);
+            break;
         case instruction::f32_convert_si64:
+            f32_convert_si64(config, i);
+            break;
         case instruction::f32_convert_ui64:
+            f32_convert_ui64(config, i);
+            break;
         case instruction::f32_demote_f64:
+            f32_demote_f64(config, i);
+            break;
         case instruction::f64_convert_si32:
+            f64_convert_si32(config, i);
+            break;
         case instruction::f64_convert_ui32:
+            f64_convert_ui32(config, i);
+            break;
         case instruction::f64_convert_si64:
+            f64_convert_si64(config, i);
+            break;
         case instruction::f64_convert_ui64:
+            f64_convert_ui64(config, i);
+            break;
         case instruction::f64_promote_f32:
+            f64_promote_f32(config, i);
+            break;
         case instruction::i32_reinterpret_f32:
+            i32_reinterpret_f32(config, i);
+            break;
         case instruction::i64_reinterpret_f64:
+            i64_reinterpret_f64(config, i);
+            break;
         case instruction::f32_reinterpret_i32:
+            f32_reinterpret_i32(config, i);
+            break;
         case instruction::f64_reinterpret_i64:
-
+            f64_reinterpret_i64(config, i);
+            break;
+        default:
             xdbg("instruction: 0x%02x", i->opcode);
             break;
         }
@@ -1008,6 +1226,8 @@ public:
         for (auto index = 0; index < func_type.args.data.size(); ++index) {
             function_args.push_back(config->stack.pop());
         }
+        // todo make it insert.
+        std::reverse(function_args.begin(), function_args.end());
 
         // xdbg("%d,%d", func_type.args.data.size(), function_args[0].to_i32());
         Configuration subconf(config->store);
@@ -1058,7 +1278,7 @@ public:
     static void get_local(Configuration * config, Instruction * i) {
         auto ptr = dynamic_cast<args_get_local *>(i->args.get());
         config->stack.append(config->frame.local_list[ptr->data]);
-        xdbg("instruction: get_local %d", config->stack.back().GetRef<Value>().to_i32());
+        xdbg("instruction: get_local index: %u %d", ptr->data, config->stack.back().GetRef<Value>().to_i32());
     }
 
     static void set_local(Configuration * config, Instruction * i) {
@@ -1108,6 +1328,8 @@ public:
     static int32_t ext32s(byte_vec input) {
         ASSERT(input.size() <= 4, "no need ext");
         auto res = input;
+        for (auto b : input)
+            xdbg("input: 0x%02x", b);
         bool sign = input[0] & 0x80;  // true - 1 false - 0
         if (sign) {
             while (res.size() < 4) {
@@ -1166,9 +1388,9 @@ public:
 
         auto memory_addr = config->frame.module->memory_addr_list[0];
         auto & memory = config->store->memory_list[memory_addr];
-        auto offset = dynamic_cast<args_load_store *>(i->args.get())->data.second;
-        auto addr = config->stack.pop().GetRef<Value>().to_i32() + offset;
-        xdbg("instruction: mem_load  addr:%d offset:%d", addr, offset);
+        uint64_t offset = dynamic_cast<args_load_store *>(i->args.get())->data.second;
+        int64_t addr = config->stack.pop().GetRef<Value>().to_i32() + offset;
+        xdbg("instruction: mem_load  addr:%" PRId64 " offset:%" PRIu64 " memory data size : %zu", addr, offset, memory.data.size());
         if (addr < 0 || addr + size > memory.data.size()) {
             // todo  make it exception.
             xerror("cppwasm: out of bounds memory access");
@@ -1255,9 +1477,9 @@ public:
 
         auto memory_addr = config->frame.module->memory_addr_list[0];
         auto & memory = config->store->memory_list[memory_addr];
-        auto offset = dynamic_cast<args_load_store *>(i->args.get())->data.second;
-        auto addr = config->stack.pop().GetRef<Value>().to_i32() + offset;
-        xdbg("instruction: mem_store  addr:%d offset:%d", addr, offset);
+        uint64_t offset = dynamic_cast<args_load_store *>(i->args.get())->data.second;
+        int64_t addr = config->stack.pop().GetRef<Value>().to_i32() + offset;
+        xdbg("instruction: mem_store  addr:%" PRId64 " offset:%" PRIu64 " memory data size : %zu", addr, offset, memory.data.size());
         if (addr < 0 || addr + size > memory.data.size()) {
             // todo  make it exception.
             xerror("cppwasm: out of bounds memory access");
@@ -1651,7 +1873,7 @@ public:
         auto b = config->stack.pop().GetRef<Value>().to_i32();
         auto a = config->stack.pop().GetRef<Value>().to_i32();
         if (b == 0)
-            xerror("cppwasm : integer divide by zero");
+            xerror("cppwasm: integer divide by zero");
         auto c = Value(a / b);
         config->stack.append(c);
     }
@@ -1661,7 +1883,7 @@ public:
         auto b = config->stack.pop().GetRef<Value>().to_u32();
         auto a = config->stack.pop().GetRef<Value>().to_u32();
         if (b == 0)
-            xerror("cppwasm : integer divide by zero");
+            xerror("cppwasm: integer divide by zero");
         auto c = Value(a / b);
         config->stack.append(c);
     }
@@ -1670,7 +1892,7 @@ public:
         auto b = config->stack.pop().GetRef<Value>().to_i32();
         auto a = config->stack.pop().GetRef<Value>().to_i32();
         if (b == 0)
-            xerror("cppwasm : integer divide by zero");
+            xerror("cppwasm: integer divide by zero");
         auto c = Value(a * b > 0 ? a % b : -(-a % b));
         config->stack.append(c);
     }
@@ -1679,7 +1901,7 @@ public:
         auto b = config->stack.pop().GetRef<Value>().to_u32();
         auto a = config->stack.pop().GetRef<Value>().to_u32();
         if (b == 0)
-            xerror("cppwasm : integer divide by zero");
+            xerror("cppwasm: integer divide by zero");
         auto c = Value(a % b);
         config->stack.append(c);
     }
@@ -1797,7 +2019,7 @@ public:
         auto b = config->stack.pop().GetRef<Value>().to_i64();
         auto a = config->stack.pop().GetRef<Value>().to_i64();
         if (b == 0)
-            xerror("cppwasm : integer divide by zero");
+            xerror("cppwasm: integer divide by zero");
         auto c = Value(a / b);
         config->stack.append(c);
     }
@@ -1806,7 +2028,7 @@ public:
         auto b = config->stack.pop().GetRef<Value>().to_u64();
         auto a = config->stack.pop().GetRef<Value>().to_u64();
         if (b == 0)
-            xerror("cppwasm : integer divide by zero");
+            xerror("cppwasm: integer divide by zero");
         auto c = Value(a / b);
         config->stack.append(c);
     }
@@ -1815,7 +2037,7 @@ public:
         auto b = config->stack.pop().GetRef<Value>().to_i64();
         auto a = config->stack.pop().GetRef<Value>().to_i64();
         if (b == 0)
-            xerror("cppwasm : integer divide by zero");
+            xerror("cppwasm: integer divide by zero");
         auto c = Value(a * b > 0 ? a % b : -(-a % b));
         config->stack.append(c);
     }
@@ -1824,7 +2046,7 @@ public:
         auto b = config->stack.pop().GetRef<Value>().to_u64();
         auto a = config->stack.pop().GetRef<Value>().to_u64();
         if (b == 0)
-            xerror("cppwasm : integer divide by zero");
+            xerror("cppwasm: integer divide by zero");
         auto c = Value(a % b);
         config->stack.append(c);
     }

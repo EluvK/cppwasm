@@ -43,7 +43,7 @@ public:
                 break;
             }
             default:
-                xerror("cppwasm error import desc");
+                xerror("cppwasm:error import desc");
             }
         }
         machine.instantiate(module, extern_value_list);
@@ -57,7 +57,7 @@ public:
                 return _export.value.second;
             }
         }
-        xerror("cppwasm, function not found");
+        xerror("cppwasm: function not found");
         return -1;
     }
 

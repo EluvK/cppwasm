@@ -63,7 +63,7 @@ Result Configuration::exec() {
             // xdbg("Result: %d", r.GetRef<Value>().to_i32());
             break;
         default:
-            xerror("error type  %d in stack should all be Value Result ", r.GetType());
+            xerror("cppwasm: error type  %d in stack should all be Value Result ", r.GetType());
             break;
         }
     }

@@ -4,6 +4,7 @@
 #include "wasi-leb128.h"
 
 #include <fstream>
+#include <cinttypes>
 /**
  * ======================================================================================================================
  * Binary Format Index
@@ -115,7 +116,7 @@ static LocalIndex GetLocalIndex(byte_IO & BinaryIO) {
 //     byte data;
 // };
 
-using LabelIndex = byte;
+using LabelIndex = uint32_t;
 static LabelIndex GetLabelIndex(byte_IO & BinaryIO) {
     return LabelIndex{U_decode_reader(BinaryIO)};
 }
@@ -460,10 +461,10 @@ public:
 
 class args_load_store : public instruction_args_base {
 public:
-    args_load_store(std::pair<byte, byte> pi) : data{pi} {
+    args_load_store(std::pair<uint64_t, uint64_t> pi) : data{pi} {
     }
 
-    std::pair<byte, byte> data;
+    std::pair<uint64_t, uint64_t> data;
 };
 using args_ptr = std::shared_ptr<instruction_args_base>;
 //--------------
@@ -488,7 +489,7 @@ public:
         case instruction::unreachable:
         case instruction::nop: {
             xdbg("unreachable nop?");
-            xerror("not support unreachable && nop");
+            xerror("cppwasm: not support unreachable && nop");
             break;
         }
         case instruction::block:
@@ -562,9 +563,9 @@ public:
         case instruction::i64_store8:
         case instruction::i64_store16:
         case instruction::i64_store32: {
-            auto _f = U_decode_reader(BinaryIO);
-            auto _s = U_decode_reader(BinaryIO);
-            auto pi = std::make_pair(_f, _s);
+            uint64_t _f = U_decode_reader(BinaryIO);
+            uint64_t _s = U_decode_reader(BinaryIO);
+            std::pair<uint64_t, uint64_t> pi = std::make_pair(_f, _s);
             // xdbg("%02x %02x", pi.first, pi.second);
             o.args = std::make_shared<args_load_store>(pi);
             break;
@@ -720,7 +721,7 @@ public:
             res.importdesc = GlobalType::GetGlobalType(BinaryIO);
             break;
         default:
-            xerror("cppwasm : something bug ? %d", res.desc);
+            xerror("cppwasm: something bug ? %d", res.desc);
         }
         return res;
     }
@@ -1035,7 +1036,7 @@ public:
             res.exportdesc = GetGlobalIndex(BinaryIO);
             break;
         default:
-            xerror("cppwasm : something bug ? %d", res.type);
+            xerror("cppwasm: something bug ? %d", res.type);
         }
         xdbg(" export_ name:%s  type:%d  index:%d", res.name.c_str(), res.type, res.exportdesc);
         return res;
@@ -1380,10 +1381,10 @@ public:
         byte_IO BinaryIO{data};
 
         if (BinaryIO.read(4) != byte_vec{0x00, 0x61, 0x73, 0x6d}) {
-            xerror("cppwasm : magic header not detected");
+            xerror("cppwasm: magic header not detected");
         }
         if (BinaryIO.read(4) != byte_vec{0x01, 0x00, 0x00, 0x00}) {
-            xerror("cppwasm : unknow wasm version");
+            xerror("cppwasm: unknow wasm version");
         }
         xdbg("----------- Module init ------------");
         while (!BinaryIO.empty()) {
@@ -1434,7 +1435,7 @@ public:
             case START_SECTION_INDEX:
                 xdbg("distribute START section(%d): size: %d", START_SECTION_INDEX, sz);
                 Start_section = StartSection::GetStartSection(sectionIO);
-                xerror("cppwasm should not have start section");
+                xerror("cppwasm:should not have start section");
                 break;
             case ELEMENT_SECTION_INDEX:
                 xdbg("distribute ELEMENT section(%d): size: %d", ELEMENT_SECTION_INDEX, sz);
