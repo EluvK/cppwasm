@@ -125,7 +125,7 @@ public:
         Runtime rt;
         std::map<std::string, std::map<std::string, host_func_base_ptr>> imps{};
         for (auto & command : case_data["commands"]) {
-            std::cout << "[------ DEBUG line:" << command["line"] << " : ------]" << command << std::endl;
+            std::cout << "[------ DEBUG line:" << command["line"] << " : ------]" << std::endl << command << std::endl;
             if (command["type"] == "module") {
                 file_name = command["filename"];
                 auto wasm_file_path = directory + "/" + file_name;
@@ -176,6 +176,8 @@ public:
                 }
             } else if (command["type"] == "assert_malformed") {
                 continue;  // wat file.
+            }else if (command["type"]=="assert_invalid"){
+                continue; //alignment must not be larger than natural? what's this for.?
             } else {
                 assert(false);
             }

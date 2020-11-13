@@ -1286,7 +1286,15 @@ public:
         auto ptr = dynamic_cast<args_get_local *>(i->args.get());
         auto v = config->stack.pop();
         ASSERT(v.GetType() == STACK_UNIT_VALUE_TYPE, "non value type to be set local");
-        config->frame.local_list[ptr->data] = v.GetRef<Value>();
+        auto & locallist = config->frame.local_list;
+        if (locallist.size() <= ptr->data) {
+            auto new_size = locallist.size();
+            while (new_size <= ptr->data)
+                new_size <<= 1;
+            locallist.resize(new_size);
+        }
+        locallist[ptr->data] = v.GetRef<Value>();
+        // config->frame.local_list.insert(config->frame.local_list.begin() + ptr->data, v.GetRef<Value>());
     }
 
     static void tee_local(Configuration * config, Instruction * i) {
@@ -1294,7 +1302,15 @@ public:
         auto ptr = dynamic_cast<args_get_local *>(i->args.get());
         auto v = config->stack.back();
         ASSERT(v.GetType() == STACK_UNIT_VALUE_TYPE, "non value type to be set local");
-        config->frame.local_list[ptr->data] = v.GetRef<Value>();
+        auto & locallist = config->frame.local_list;
+        if (locallist.size() <= ptr->data) {
+            auto new_size = locallist.size();
+            while (new_size <= ptr->data)
+                new_size <<= 1;
+            locallist.resize(new_size);
+        }
+        locallist[ptr->data] = v.GetRef<Value>();
+        // config->frame.local_list.insert(config->frame.local_list.begin() + ptr->data, v.GetRef<Value>());
     }
 
     static void get_global(Configuration * config, Instruction * i) {
@@ -1563,12 +1579,12 @@ public:
 
     static void f32_const(Configuration * config, Instruction * i) {
         config->stack.append(Value(dynamic_cast<args_f32_count *>(i->args.get())->data));
-        xdbg("instruction: f32_const %d", config->stack.back().GetRef<Value>().to_f32())
+        xdbg("instruction: f32_const %f", config->stack.back().GetRef<Value>().to_f32())
     }
 
     static void f64_const(Configuration * config, Instruction * i) {
         config->stack.append(Value(dynamic_cast<args_f64_count *>(i->args.get())->data));
-        xdbg("instruction: f64_const %d", config->stack.back().GetRef<Value>().to_f64())
+        xdbg("instruction: f64_const %lf", config->stack.back().GetRef<Value>().to_f64())
     }
 
     // i32:

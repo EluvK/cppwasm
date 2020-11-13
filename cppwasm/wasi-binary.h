@@ -507,8 +507,11 @@ public:
         }
         case instruction::br_table: {
             auto n = U_decode_reader(BinaryIO);
-            auto li = LabelIndex(U_decode_reader(BinaryIO));
-            auto li_list = std::vector<LabelIndex>(n, li);
+            auto li_list = std::vector<LabelIndex>{};
+            for (auto index = 0; index < n; ++index) {
+                auto li = LabelIndex(U_decode_reader(BinaryIO));
+                li_list.push_back(li);
+            }
             auto b = LabelIndex(U_decode_reader(BinaryIO));
             o.args = std::make_shared<args_br_table>(li_list, b);
             break;
