@@ -21,12 +21,20 @@ public:
 
     void assert_result(Result & expect_res, Result & real_res) {
         std::printf("exp: ");
-        for (auto index = 0; index < expect_res.data[0].raw().size(); index++) {
-            std::printf("0x%02x  ", expect_res.data[0].raw()[index]);
+        if (expect_res.data.empty()) {
+            std::printf(" empty expect_res");
+        } else {
+            for (auto index = 0; index < expect_res.data[0].raw().size(); index++) {
+                std::printf("0x%02x  ", expect_res.data[0].raw()[index]);
+            }
         }
         std::printf("\n------\nact: ");
-        for (auto index = 0; index < real_res.data[0].raw().size(); index++) {
-            std::printf("0x%02x  ", real_res.data[0].raw()[index]);
+        if (real_res.data.empty()) {
+            std::printf(" empty real_res");
+        } else {
+            for (auto index = 0; index < real_res.data[0].raw().size(); index++) {
+                std::printf("0x%02x  ", real_res.data[0].raw()[index]);
+            }
         }
         std::printf("\n");
         assert(expect_res.data.size() == real_res.data.size());
@@ -177,7 +185,22 @@ public:
             } else if (command["type"] == "assert_malformed") {
                 continue;  // wat file.
             }else if (command["type"]=="assert_invalid"){
-                continue; //alignment must not be larger than natural? what's this for.?
+                continue;  // alignment must not be larger than natural? what's this for.?
+            } else if (command["type"] == "assert_unlinkable") {
+                continue;
+            // } else if (command["type"] == "register") {
+            //     continue;
+            // } else if (command["type"] == "assert_uninstantiable") {
+            //     continue;
+            } else if (command["type"] == "action") {
+                if (command["action"]["type"] == "invoke") {
+                    std::string function_name = command["action"]["field"];
+                    std::vector<InputType> args = parse_arg(command["action"]["args"]);
+                    rt.exec(function_name, args);
+                } else {
+                    xdbg("no implement");
+                    assert(false);
+                }
             } else {
                 assert(false);
             }

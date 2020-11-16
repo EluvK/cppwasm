@@ -323,6 +323,7 @@ public:
         GlobalType res{};
         res.value_type = GetValueType(BinaryIO);
         res.mut = GetMut(BinaryIO);
+        return res;
     }
 
     ValueType value_type;
@@ -487,9 +488,9 @@ public:
         o.args = {};
         switch (o.opcode) {
         case instruction::unreachable:
+            xerror("cppwasm: not support unreachable");
         case instruction::nop: {
-            xdbg("unreachable nop?");
-            xerror("cppwasm: not support unreachable && nop");
+            xdbg("nop pass!");
             break;
         }
         case instruction::block:

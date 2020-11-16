@@ -149,7 +149,7 @@ public:
     std::vector<FunctionAddress> function_addr_list;
     std::vector<TableAddress> table_addr_list;
     std::vector<MemoryAddress> memory_addr_list;
-    std::vector<GlobalAddress> gloabl_addr_list;
+    std::vector<GlobalAddress> global_addr_list;
     std::vector<ExportInstance> export_list;
 };
 
@@ -533,8 +533,10 @@ public:
     static void exec(Configuration * config, Instruction * i) {
         switch (i->opcode) {
         case instruction::unreachable:
+            xerror("cppwasm: not support unreachable");
         case instruction::nop:
-            xerror("cppwasm: not support nop && unreachable");
+            xdbg("instruction: nop  pass");
+            break;
         case instruction::block:
             block(config, i);
             break;
@@ -1288,7 +1290,7 @@ public:
         ASSERT(v.GetType() == STACK_UNIT_VALUE_TYPE, "non value type to be set local");
         auto & locallist = config->frame.local_list;
         if (locallist.size() <= ptr->data) {
-            auto new_size = locallist.size();
+            auto new_size = std::max(locallist.size(), (size_t)1);
             while (new_size <= ptr->data)
                 new_size <<= 1;
             locallist.resize(new_size);
@@ -1304,7 +1306,7 @@ public:
         ASSERT(v.GetType() == STACK_UNIT_VALUE_TYPE, "non value type to be set local");
         auto & locallist = config->frame.local_list;
         if (locallist.size() <= ptr->data) {
-            auto new_size = locallist.size();
+            auto new_size = std::max(locallist.size(), (size_t)1);
             while (new_size <= ptr->data)
                 new_size <<= 1;
             locallist.resize(new_size);
@@ -1316,7 +1318,7 @@ public:
     static void get_global(Configuration * config, Instruction * i) {
         xdbg("instruction: get_global");
         auto ptr = dynamic_cast<args_get_global *>(i->args.get());
-        auto a = config->frame.module->gloabl_addr_list[ptr->data];
+        auto a = config->frame.module->global_addr_list[ptr->data];
         auto const & glob = config->store->global_list[a];
         auto & r = glob.value;
         config->stack.append(r);
@@ -1325,7 +1327,7 @@ public:
     static void set_global(Configuration * config, Instruction * i) {
         xdbg("instruction: set_global");
         auto ptr = dynamic_cast<args_get_global *>(i->args.get());
-        auto a = config->frame.module->gloabl_addr_list[ptr->data];
+        auto a = config->frame.module->global_addr_list[ptr->data];
         auto & glob = config->store->global_list[a];
         // todo make is static const var = 0x01;
         ASSERT(glob.mut == 0x01, "should be mutable");
@@ -2487,7 +2489,7 @@ public:
 
         for (auto & p : extern_value_list) {
             if (p.first == GLOBAL_EXT_INDEX) {
-                aux.gloabl_addr_list.push_back(p.second);
+                aux.global_addr_list.push_back(p.second);
             }
         }
         for (auto & _global : module.global_list) {
@@ -2497,10 +2499,8 @@ public:
             Configuration config{store};
             config.set_frame(frame);
             auto r = config.exec().data[0];
-            // todo how? Value->result  Result = list[Value]
             global_values.push_back(r);
         }
-
         allocate(module, extern_value_list, global_values);
 
         for (auto _element : module.element_list) {
@@ -2512,6 +2512,13 @@ public:
             auto offset = r.to_i64();
             auto table_addr = module_instance->table_addr_list[_element.table_index];
             auto & table_instance = store->table_list[table_addr];
+            // todo may make it RESIZE define.
+            if (table_instance.element_list.size() <= offset + _element.init.size()) {
+                auto new_size = std::max(table_instance.element_list.size(), (size_t)1);
+                while (new_size <= _element.init.size() + offset)
+                    new_size <<= 1;
+                table_instance.element_list.resize(new_size);
+            }
             for (auto index = 0; index < _element.init.size(); ++index) {
                 table_instance.element_list[offset + index] = _element.init[index];
             }
@@ -2547,7 +2554,7 @@ public:
                 module_instance->memory_addr_list.push_back(p.second);
                 break;
             case GLOBAL_EXT_INDEX:
-                module_instance->gloabl_addr_list.push_back(p.second);
+                module_instance->global_addr_list.push_back(p.second);
                 break;
             }
         }
@@ -2571,6 +2578,7 @@ public:
         for (auto index = 0; index < module.global_list.size(); ++index) {
             auto & _global = module.global_list[index];
             auto global_addr = store->allocate_global(_global.type, global_value[index]);
+            module_instance->global_addr_list.push_back(global_addr);
         }
 
         for (auto & _export : module.export_list) {
@@ -2598,7 +2606,7 @@ public:
             }
             case EXPORT_TYPE_GLOBAL: {
                 xdbg(" GET export_global name:%s  type:%d  index:%d", _export.name.c_str(), _export.type, _export.exportdesc);
-                auto addr = module_instance->gloabl_addr_list[_export.exportdesc];
+                auto addr = module_instance->global_addr_list[_export.exportdesc];
                 extern_value = std::make_pair(3, addr);
                 break;
             }
