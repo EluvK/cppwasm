@@ -7,7 +7,7 @@ TEST(test_, struct_1) {
 
     Module mod{file_path};
 
-    std::map<std::string, std::map<std::string, host_func_base_ptr>> imps;
+    std::map<std::string, std::map<std::string, imp_variant>>  imps;
 
     Runtime runtime{mod, imps};
     

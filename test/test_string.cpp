@@ -18,7 +18,7 @@ TEST(test_, show_string_1) {
     Module mod{file_path};
     func_say_hello print;
     host_func_base_ptr _print = std::make_shared<func_say_hello>(print);
-    std::map<std::string, std::map<std::string, host_func_base_ptr>> imps;
+    std::map<std::string, std::map<std::string, imp_variant>>  imps;
     imps["env"] = {{"print", _print}};
     Runtime runtime{mod, imps};
     runtime.exec("show", {"Charles"});

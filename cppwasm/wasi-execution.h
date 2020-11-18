@@ -258,8 +258,7 @@ public:
 
     void grow(int64_t n) {
         // grow n page memory
-        if (type.limits.m && size + n > type.limits.n) {
-            // todo can add memory limit test;
+        if (type.limits.m && size + n > type.limits.m) {
             xerror("cppwasm: out of memory limit");
         }
         // todo make it static const 2^16 memory_page
@@ -289,6 +288,14 @@ public:
     Value value;
     Mut mut;
 };
+
+// GlobalInstance can be just Value. IF not need to use Mut.
+using imp_variant = Variant<host_func_base_ptr,TableInstance,MemoryInstance,GlobalInstance>;
+#define IMP_VAR_TYPE_FUNC 1
+#define IMP_VAR_TYPE_TABLE 2
+#define IMP_VAR_TYPE_MEMORY 3
+#define IMP_VAR_TYPE_GLOBAL 4
+
 
 /**
  * @brief The store represents all global state that can be manipulated by WebAssembly programs. It consists of the runtime

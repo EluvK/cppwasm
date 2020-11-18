@@ -11,7 +11,7 @@ TEST_F(cppwasm_test_mvp, test_1) {
     test_case("../spectest/comments");
     test_case("../spectest/const");
     test_case("../spectest/custom");
-    // test_case("../spectest/data");
+    test_case("../spectest/data");
     // test_case("../spectest/elem");
     test_case("../spectest/endianness");
     // test_case("../spectest/exports");

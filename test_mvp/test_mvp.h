@@ -7,6 +7,15 @@
 #include <string>
 using json = nlohmann::json;
 
+
+class empty_host_func : public host_func_base {
+public:
+    Result operator()(std::vector<Value> args, std::vector<ValueType> types) override {
+        xdbg("cppwasm: empty_host_func");
+        return{};
+    }
+};
+
 class cppwasm_test_mvp : public testing::Test{
 public:
     inline std::string get_case_name(std::string dir) {
@@ -131,7 +140,24 @@ public:
         std::string file_name;
         Module mod;
         Runtime rt;
-        std::map<std::string, std::map<std::string, host_func_base_ptr>> imps{};
+
+        empty_host_func e_host_func;
+        host_func_base_ptr e_func = std::make_shared<empty_host_func>(e_host_func);
+
+        Limits _limits;
+        _limits.n = 1;
+        _limits.m = 2;
+        MemoryType _mem_type{};
+        _mem_type.limits = _limits;
+        MemoryInstance _mem_ins = MemoryInstance{_mem_type};
+
+        GlobalInstance _global_ins{Value{666}, Mut{0}};
+
+        std::map<std::string, std::map<std::string, imp_variant>> test_imps{};
+        test_imps["spectest"]["print_i32"] = e_func;
+        test_imps["spectest"]["memory"] = _mem_ins;
+        test_imps["spectest"]["global_i32"] = _global_ins;
+
         for (auto & command : case_data["commands"]) {
             std::cout << "[------ DEBUG line:" << command["line"] << " : ------]" << std::endl << command << std::endl;
             if (command["type"] == "module") {
@@ -139,7 +165,7 @@ public:
                 auto wasm_file_path = directory + "/" + file_name;
                 xdbg("wasm_file_path: %s", wasm_file_path.c_str());
                 mod = Module{wasm_file_path.c_str()};
-                rt = Runtime{mod, imps};
+                rt = Runtime{mod, test_imps};
             } else if (command["type"] == "assert_return") {
                 // {"type": "assert_return", "line": 104, "action": {"type": "invoke", "field": "8u_good1", "args": [{"type": "i32", "value": "0"}]}, "expected": [{"type": "i32",
                 // "value": "97"}]},
@@ -204,6 +230,7 @@ public:
             } else {
                 assert(false);
             }
+            // if(command["line"]=="458") assert(false);
             // else if (command["type"] == "") {
             // } else if (command["type"] == "assert_malformed") {
             //     continue;

@@ -38,7 +38,7 @@ TEST(test_, etx_1) {
     host_func_base_ptr _fib = std::make_shared<func_fib>(fib);
     func_print print;
     host_func_base_ptr _print = std::make_shared<func_print>(print);
-    std::map<std::string, std::map<std::string, host_func_base_ptr>> imps;
+    std::map<std::string, std::map<std::string, imp_variant>>  imps;
     imps["env"] = {{"fib", _fib}, {"print", _print}};
     Runtime runtime{mod, imps};
     EXPECT_EQ(runtime.exec("cal", {20}).data[0].to_i32(), 6765);

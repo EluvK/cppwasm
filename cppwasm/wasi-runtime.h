@@ -5,7 +5,7 @@
 class Runtime {
 public:
     Runtime(){}
-    Runtime(Module const & module, std::map<std::string, std::map<std::string, host_func_base_ptr>> & imps) : machine{} {
+    Runtime(Module const & module, std::map<std::string, std::map<std::string, imp_variant>> & imps) : machine{} {
         // todo import_list?
         std::vector<ExternValue> extern_value_list;
         for (auto _import : module.import_list) {
@@ -15,13 +15,21 @@ public:
                 // extern_memory = 0x02
                 // extern_global = 0x03
             case 0x00: {
-                HostFunc hf{module.type_list[_import.desc], imps[_import.module][_import.name]};  // host_func_base_ptr
+                if (imps.find(_import.module) == imps.end() || imps[_import.module].find(_import.name) == imps[_import.module].end()) {
+                    xdbg("fail to find imps : type funcion module [%s] name [%s] ", _import.module.c_str(), _import.name.c_str());
+                    xerror("cppwasm: missing imports function");
+                }
+                HostFunc hf{module.type_list[_import.desc], imps[_import.module][_import.name].GetRef<host_func_base_ptr>()};  // host_func_base_ptr
                 auto addr = machine.store->allocate_host_function(hf);
                 extern_value_list.push_back(std::make_pair(FUNCTION_EXT_INDEX, addr));
                 break;
             }
             case 0x01: {
                 // todo ? how table import
+                if (imps.find(_import.module) == imps.end() || imps[_import.module].find(_import.name) == imps[_import.module].end()) {
+                    xdbg("fail to find imps : type table module [%s] name [%s] ", _import.module.c_str(), _import.name.c_str());
+                    xerror("cppwasm: missing imports table");
+                }
                 // TableAddress addr{store.table_list.size()};
                 // auto table = imps[_import.module][_import.name]; // table tableinstance
                 // store.table_list.push_back(table);
@@ -29,16 +37,23 @@ public:
                 break;
             }
             case 0x02: {
-                // MemoryAddress addr{store.memory_list.size()};
-                // auto memory = imps[_import.module][_import.name];  // memory: memoryinstance
-                // memory.grow(_import.importdesc.GetRef<MemoryType>().limits.n);
-                // store.memory_list.push_back(memory);
-                // extern_value_list.push_back(std::make_pair(MEMORY_EXT_INDEX,addr));
+                if (imps.find(_import.module) == imps.end() || imps[_import.module].find(_import.name) == imps[_import.module].end()) {
+                    xdbg("fail to find imps : type memory module [%s] name [%s] ", _import.module.c_str(), _import.name.c_str());
+                    xerror("cppwasm: missing imports memory");
+                }
+                MemoryAddress addr{machine.store->memory_list.size()};
+                auto memory = imps[_import.module][_import.name].GetRef<MemoryInstance>();  // memory: memoryinstance
+                memory.grow(_import.importdesc.GetRef<MemoryType>().limits.n);
+                machine.store->memory_list.push_back(memory);
+                extern_value_list.push_back(std::make_pair(MEMORY_EXT_INDEX,addr));
                 break;
             }
             case 0x03: {
-                // todo ? how global import
-                auto addr = machine.store->allocate_global(_import.importdesc.GetRef<GlobalType>(), Value{});
+                if (imps.find(_import.module) == imps.end() || imps[_import.module].find(_import.name) == imps[_import.module].end()) {
+                    xdbg("fail to find imps : type global module [%s] name [%s] ", _import.module.c_str(), _import.name.c_str());
+                    xerror("cppwasm: missing imports global");
+                }
+                auto addr = machine.store->allocate_global(_import.importdesc.GetRef<GlobalType>(), imps[_import.module][_import.name].GetRef<GlobalInstance>().value);
                 extern_value_list.push_back(std::make_pair(GLOBAL_EXT_INDEX, addr));
                 break;
             }
