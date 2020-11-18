@@ -30,10 +30,10 @@ public:
                     xdbg("fail to find imps : type table module [%s] name [%s] ", _import.module.c_str(), _import.name.c_str());
                     xerror("cppwasm: missing imports table");
                 }
-                // TableAddress addr{store.table_list.size()};
-                // auto table = imps[_import.module][_import.name]; // table tableinstance
-                // store.table_list.push_back(table);
-                // extern_value_list.push_back(std::make_pair(TABLE_EXT_INDEX, addr));
+                TableAddress addr{machine.store->table_list.size()};
+                auto table = imps[_import.module][_import.name].GetRef<TableInstance>();  // table tableinstance
+                machine.store->table_list.push_back(table);
+                extern_value_list.push_back(std::make_pair(TABLE_EXT_INDEX, addr));
                 break;
             }
             case 0x02: {

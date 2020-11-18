@@ -153,10 +153,17 @@ public:
 
         GlobalInstance _global_ins{Value{666}, Mut{0}};
 
+        Limits _limits2;
+        _limits2.n = 10;
+        _limits2.m = 20;
+
+        TableInstance _table_ins{FunctionAddress{}, _limits2};
+
         std::map<std::string, std::map<std::string, imp_variant>> test_imps{};
         test_imps["spectest"]["print_i32"] = e_func;
         test_imps["spectest"]["memory"] = _mem_ins;
         test_imps["spectest"]["global_i32"] = _global_ins;
+        test_imps["spectest"]["table"] = _table_ins;
 
         for (auto & command : case_data["commands"]) {
             std::cout << "[------ DEBUG line:" << command["line"] << " : ------]" << std::endl << command << std::endl;
@@ -227,20 +234,13 @@ public:
                     xdbg("no implement");
                     assert(false);
                 }
+            // if(command["line"]=="458") assert(false);
+            // else if (command["type"] == "") {
+            } else if (command["type"] == "register") { // todo check why return .
+                return;
             } else {
                 assert(false);
             }
-            // if(command["line"]=="458") assert(false);
-            // else if (command["type"] == "") {
-            // } else if (command["type"] == "assert_malformed") {
-            //     continue;
-            // } else if (command["type"] == "assert_invalid") {
-            //     continue;
-            // } else if (command["type"] == "assert_unlinkable") {
-            //     continue;
-            // } else if (command["type"] == "register") {
-            //     continue;
-            // }
         }
     }
 
