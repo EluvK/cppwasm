@@ -2,8 +2,8 @@
 #include "base/Variant.h"
 #include "base/wasi-define.h"
 // #include "wasi-alu.h"
-#include "wasi-binary.h"
 #include "LittleEndian.h"
+#include "wasi-binary.h"
 
 #include <cfenv>
 
@@ -20,17 +20,17 @@ public:
     }
     Value(byte_vec bv) : raw_data{bv} {
     }
-    Value(int32_t i32) : raw_data{LittleEndian::pack_i32(i32)} {
+    Value(int32_t i32) : raw_data{LittleEndian::pack_i32(i32)}, _type{TYPE_i32} {
     }
-    Value(int64_t i64) : raw_data{LittleEndian::pack_i64(i64)} {
+    Value(int64_t i64) : raw_data{LittleEndian::pack_i64(i64)}, _type{TYPE_i64} {
     }
-    Value(uint32_t u32) : raw_data{LittleEndian::pack_u32(u32)} {
+    Value(uint32_t u32) : raw_data{LittleEndian::pack_u32(u32)}, _type{TYPE_i32} {
     }
-    Value(uint64_t u64) : raw_data{LittleEndian::pack_u64(u64)} {
+    Value(uint64_t u64) : raw_data{LittleEndian::pack_u64(u64)}, _type{TYPE_i64} {
     }
-    Value(float f32) : raw_data{LittleEndian::pack_f32(f32)} {
+    Value(float f32) : raw_data{LittleEndian::pack_f32(f32)}, _type{TYPE_f32} {
     }
-    Value(double f64) : raw_data{LittleEndian::pack_f64(f64)} {
+    Value(double f64) : raw_data{LittleEndian::pack_f64(f64)}, _type{TYPE_f64} {
     }
     Value(std::string str) : raw_data{S_encode(str)} {
     }
@@ -60,6 +60,22 @@ public:
         return raw_data;
     }
 
+    byte type() {
+        return _type;
+    }
+
+    static Value from_f32_u32(uint32_t u32) {
+        Value v{u32};
+        v._type = TYPE_f32;
+        return v;
+    }
+
+    static Value from_f64_u64(uint64_t u64) {
+        Value v{u64};
+        v._type = TYPE_f64;
+        return v;
+    }
+
     static Value newValue(InputType data) {
         switch (data.GetType()) {
         case TYPE_I32:
@@ -79,6 +95,7 @@ public:
 
 private:
     byte_vec raw_data;
+    byte _type;
 };
 
 class Result {
@@ -290,12 +307,11 @@ public:
 };
 
 // GlobalInstance can be just Value. IF not need to use Mut.
-using imp_variant = Variant<host_func_base_ptr,TableInstance,MemoryInstance,GlobalInstance>;
+using imp_variant = Variant<host_func_base_ptr, TableInstance, MemoryInstance, GlobalInstance>;
 #define IMP_VAR_TYPE_FUNC 1
 #define IMP_VAR_TYPE_TABLE 2
 #define IMP_VAR_TYPE_MEMORY 3
 #define IMP_VAR_TYPE_GLOBAL 4
-
 
 /**
  * @brief The store represents all global state that can be manipulated by WebAssembly programs. It consists of the runtime
@@ -2210,16 +2226,36 @@ public:
         config->stack.append(c);
     }
     static void f32_min(Configuration * config, Instruction * i) {
-        xdbg("instruction: f32_min");
         auto b = config->stack.pop().GetRef<Value>().to_f32();
         auto a = config->stack.pop().GetRef<Value>().to_f32();
-        config->stack.append(Value(std::min(a, b)));
+        xdbg("instruction: f32_min %f %f %f", a, b, std::min(a, b));
+        // std::signbit(a) // return false if a is positive. true if a is negative
+        if (a == 0.0 && b == 0.0 && (std::signbit(a) || std::signbit(b))) {
+            // wrong if a==b==0???? a(0.0)!=b(-0.0) but a==0.0 && b==0.0???
+            xdbg("instruction: f32_min negativezero");
+            config->stack.append(Value::from_f32_u32(f32_negative_zero));
+        } else if (isnanf(a) || isnanf(b)) {
+            // todo might need figure out nan. one is nan than min/max result is nan?? strange logic CHECK DOCUMENT!
+            config->stack.append(Value(isnanf(a) ? a : b));
+        } else {
+            xdbg("instruction: f32_min a!=b");
+            // todo magicly result is different with diffent order nan can't be compare. MIGHT need to write a totally float wheel.
+            config->stack.append(Value(std::min(a, b)));
+        }
     }
     static void f32_max(Configuration * config, Instruction * i) {
-        xdbg("instruction: f32_max");
         auto b = config->stack.pop().GetRef<Value>().to_f32();
         auto a = config->stack.pop().GetRef<Value>().to_f32();
-        config->stack.append(Value(std::max(a, b)));
+        xdbg("instruction: f32_max %f %f %f", a, b, std::max(b, a));
+        if (a == 0.0 && b == 0.0 && !(std::signbit(a) && std::signbit(b))) {
+            xdbg("instruction: f32_max negativezero");
+            config->stack.append(Value::from_f32_u32(f32_positive_zero));
+        } else if (isnanf(a) || isnanf(b)) {
+            config->stack.append(Value(isnanf(a) ? a : b));
+        } else {
+            xdbg("instruction: f32_max a!=b");
+            config->stack.append(Value(std::max(b, a)));
+        }
     }
     static void f32_copysign(Configuration * config, Instruction * i) {
         xdbg("instruction: f32_copysign");
@@ -2301,16 +2337,35 @@ public:
         config->stack.append(c);
     }
     static void f64_min(Configuration * config, Instruction * i) {
-        xdbg("instruction: f64_min");
         auto b = config->stack.pop().GetRef<Value>().to_f64();
         auto a = config->stack.pop().GetRef<Value>().to_f64();
-        config->stack.append(Value(std::min(a, b)));
+        xdbg("instruction: f64_min %f %f %f", a, b, std::min(a, b));
+        // std::signbit(a) // return false if a is positive. true if a is negative
+        if (a == 0.0 && b == 0.0 && (std::signbit(a) || std::signbit(b))) {
+            xdbg("instruction: f64_min negativezero");
+            config->stack.append(Value::from_f64_u64(f64_negative_zero));
+        } else if (isnanf(a) || isnanf(b)) {
+            // todo might need figure out nan. one is nan than min/max result is nan?? strange logic CHECK DOCUMENT!
+            config->stack.append(Value(isnanf(a) ? a : b));
+        } else {
+            xdbg("instruction: f64_min a!=b");
+            config->stack.append(Value(std::min(a, b)));
+        }
     }
     static void f64_max(Configuration * config, Instruction * i) {
-        xdbg("instruction: f64_max");
         auto b = config->stack.pop().GetRef<Value>().to_f64();
         auto a = config->stack.pop().GetRef<Value>().to_f64();
-        config->stack.append(Value(std::max(a, b)));
+        xdbg("instruction: f64_max %f %f %f", a, b, std::max(a, b));
+        if (a == 0.0 && b == 0.0 && !(std::signbit(a) && std::signbit(b))) {
+            xdbg("instruction: f64_max negativezero");
+            config->stack.append(Value::from_f64_u64(f64_negative_zero));
+        } else if (isnanf(a) || isnanf(b)) {
+            // todo might need figure out nan. one is nan than min/max result is nan?? strange logic CHECK DOCUMENT!
+            config->stack.append(Value(isnanf(a) ? a : b));
+        } else {
+            xdbg("instruction: f64_max a!=b");
+            config->stack.append(Value(std::max(a, b)));
+        }
     }
     static void f64_copysign(Configuration * config, Instruction * i) {
         xdbg("instruction: f64_copysign");

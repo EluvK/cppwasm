@@ -7,16 +7,15 @@
 #include <string>
 using json = nlohmann::json;
 
-
 class empty_host_func : public host_func_base {
 public:
     Result operator()(std::vector<Value> args, std::vector<ValueType> types) override {
         xdbg("cppwasm: empty_host_func");
-        return{};
+        return {};
     }
 };
 
-class cppwasm_test_mvp : public testing::Test{
+class cppwasm_test_mvp : public testing::Test {
 public:
     inline std::string get_case_name(std::string dir) {
         std::string res;
@@ -26,6 +25,35 @@ public:
             res = dir[index] + res;
         }
         return res;
+    }
+
+    void assert_value(Value & a, Value & b) {
+        if (b.type() == TYPE_i32 || b.type() == TYPE_i64) {
+            assert(a.type() == b.type());
+            assert(a.raw() == b.raw());
+        } else if (b.type() == TYPE_f32) {
+            assert(a.type() == TYPE_f32);
+            if (isnanf(b.to_f32())) {
+                if (b.to_i32() == f32_nan_canonical) {
+                    assert(a.to_u32() == f32_nan_canonical || a.to_u32() == (f32_nan_canonical | 1 << 31));
+                } else {
+                    assert(isnanf(a.to_f32()));
+                }
+                return;
+            }
+            assert(a.raw() == b.raw());
+        } else if (b.type() == TYPE_f64) {
+            assert(a.type() == TYPE_f64);
+            if (isnanf(b.to_f64())) {
+                if (b.to_i64() == f64_nan_canonical) {
+                    assert(a.to_u64() == f64_nan_canonical || a.to_u32() == (f64_nan_canonical | 1 << 62));
+                } else {
+                    assert(isnanf(a.to_f64()));
+                }
+                return;
+            }
+            assert(a.raw() == b.raw());
+        }
     }
 
     void assert_result(Result & expect_res, Result & real_res) {
@@ -48,9 +76,7 @@ public:
         std::printf("\n");
         assert(expect_res.data.size() == real_res.data.size());
         for (auto index = 0; index < expect_res.data.size(); index++) {
-            for (auto index1 = 0; index1 < expect_res.data[index].raw().size(); index1++) {
-                assert(expect_res.data[index].raw()[index1] == real_res.data[index].raw()[index1]);
-            }
+            assert_value(real_res.data[index], expect_res.data[index]);
         }
     }
 
@@ -62,66 +88,52 @@ public:
         return ret;
     }
 
-    Result parse_exp(nlohmann::json const & expect_json) {
-        Result exp_res;
-        std::cout << "expect_json " << expect_json << std::endl;
-        for (auto & p : expect_json) {
+    std::vector<Value> parse_val(nlohmann::json const & json) {
+        std::vector<Value> res;
+        std::cout << json << std::endl;
+        for (auto & p : json) {
             std::cout << "each pair: " << p << std::endl;
             std::string str = p["value"];
             if (p["type"] == "i32") {
                 int32_t val = atoi(str.c_str());
-                xdbg("expect_res :% " PRId32, val);
-                exp_res.data.push_back(Value(val));
+                xdbg("res :% " PRId32, val);
+                res.push_back(Value(val));
             } else if (p["type"] == "i64") {
                 uint64_t ua = stringToUINT64(str.c_str());
-                xdbg("expect_res ua :% " PRIu64, ua);
+                xdbg("res ua :% " PRIu64, ua);
                 int64_t u2i = static_cast<int64_t>(ua);
-                xdbg("expect_res u2i:% " PRId64, u2i);
-                // int64_t a = atoll(str.c_str());
-                // xdbg("expect_res :% " PRId64, a);
-                exp_res.data.push_back(Value(u2i));
+                xdbg("res u2i:% " PRId64, u2i);
+                res.push_back(Value(u2i));
             } else if (p["type"] == "f32") {
-                uint32_t val = atol(str.c_str());
-                float f32 = reinterpret_cast<float &>(val);
-                xdbg("expect_res f32:%f", f32);
-                exp_res.data.push_back(Value(f32));
+                uint32_t val{};
+                if (str == "nan:canonical") {
+                    val = f32_nan_canonical;
+                    res.push_back(Value::from_f32_u32(val));
+                    xdbg("nan:canonical val :% " PRIu32, val);
+                } else if (str == "nan:arithmetic") {
+                    val = f32_nan_canonical + 1;
+                    res.push_back(Value::from_f32_u32(val));
+                    xdbg("nan:arithmetic val :% " PRIu32, val);
+                } else {
+                    val = atol(str.c_str());
+                    res.push_back(Value::from_f32_u32(val));
+                    xdbg("nomal val :% " PRIu32, val);
+                }
             } else if (p["type"] == "f64") {
-                
-                uint64_t val = stringToUINT64(str.c_str());
-                double f64 = reinterpret_cast<double &>(val);
-                xdbg("expect_res f64:%lf", f64);
-                exp_res.data.push_back(Value(f64));
-
-            }
-        }
-        return exp_res;
-    }
-    std::vector<InputType> parse_arg(nlohmann::json const & args_json) {
-        std::vector<InputType> res;
-        std::cout << "args_json " << args_json << std::endl;
-        for (auto & p : args_json) {
-            std::cout << "each pair: " << p << std::endl;
-            std::string str = p["value"];
-            if (p["type"] == "i32") {
-                int32_t a = atoi(str.c_str());
-                res.push_back(a);
-                xdbg("args_input :% " PRId32, a);
-            } else if (p["type"] == "i64") {
-                uint64_t ua = stringToUINT64(str.c_str());
-                xdbg("inputargs ua :% " PRIu64, ua);
-                int64_t u2i = static_cast<int64_t>(ua);
-                xdbg("inputargs u2i:% " PRId64, u2i);
-                res.push_back(u2i);
-            } else if (p["type"] == "f32") {
-                uint32_t val = atol(str.c_str());
-                float f32 = reinterpret_cast<float &>(val);
-                xdbg("inputargs f32:%f", f32);
-                res.push_back(f32);
-            } else if (p["type"] == "f64") {
-                uint64_t val = stringToUINT64(str.c_str());
-                double f64 = reinterpret_cast<double &>(val);
-                xdbg("inputargs f64:%lf", f64);
-                res.push_back(f64);
+                uint64_t val{};
+                if (str == "nan:canonical") {
+                    val = f64_nan_canonical;
+                    res.push_back(Value::from_f64_u64(val));
+                    xdbg("nan:canonical val :% " PRIu64, val);
+                } else if (str == "nan:arithmetic") {
+                    val = f64_nan_canonical + 1;
+                    res.push_back(Value::from_f64_u64(val));
+                    xdbg("nan:arithmetic val :% " PRIu64, val);
+                } else {
+                    val = stringToUINT64(str.c_str());
+                    res.push_back(Value::from_f64_u64(val));
+                    xdbg("nomal val :% " PRIu64, val);
+                }
             }
         }
         return res;
@@ -179,11 +191,12 @@ public:
                 if (command["action"]["type"] == "invoke") {
                     std::string function_name = command["action"]["field"];
                     // xdbg("function_name: %s", function_name.c_str());
-                    std::vector<InputType> args = parse_arg(command["action"]["args"]);
+                    std::vector<Value> args = parse_val(command["action"]["args"]);
                     // xdbg("args.size:%d", args.size());
-                    Result expect_res = parse_exp(command["expected"]);
+                    Result expect_res;
+                    expect_res.data = parse_val(command["expected"]);
                     // xdbg("expect_res.size:%d", expect_res.data.size());
-                    Result real_res = rt.exec(function_name, args);
+                    Result real_res = rt.exec_accu(function_name, args);
 
                     assert_result(expect_res, real_res);
 
@@ -195,10 +208,10 @@ public:
                 if (command["action"]["type"] == "invoke") {
                     std::string function_name = command["action"]["field"];
                     // xdbg("function_name: %s", function_name.c_str());
-                    std::vector<InputType> args = parse_arg(command["action"]["args"]);
+                    std::vector<Value> args = parse_val(command["action"]["args"]);
                     // xdbg("args.size:%d", args.size());
                     try {
-                        rt.exec(function_name, args);
+                        rt.exec_accu(function_name, args);
                     } catch (const char * str) {
                         std::string s{str};
                         std::string expect = command["text"];
@@ -217,26 +230,26 @@ public:
                 }
             } else if (command["type"] == "assert_malformed") {
                 continue;  // wat file.
-            }else if (command["type"]=="assert_invalid"){
+            } else if (command["type"] == "assert_invalid") {
                 continue;  // alignment must not be larger than natural? what's this for.?
             } else if (command["type"] == "assert_unlinkable") {
                 continue;
-            // } else if (command["type"] == "register") {
-            //     continue;
-            // } else if (command["type"] == "assert_uninstantiable") {
-            //     continue;
+                // } else if (command["type"] == "register") {
+                //     continue;
+                // } else if (command["type"] == "assert_uninstantiable") {
+                //     continue;
             } else if (command["type"] == "action") {
                 if (command["action"]["type"] == "invoke") {
                     std::string function_name = command["action"]["field"];
-                    std::vector<InputType> args = parse_arg(command["action"]["args"]);
-                    rt.exec(function_name, args);
+                    std::vector<Value> args = parse_val(command["action"]["args"]);
+                    rt.exec_accu(function_name, args);
                 } else {
                     xdbg("no implement");
                     assert(false);
                 }
-            // if(command["line"]=="458") assert(false);
-            // else if (command["type"] == "") {
-            } else if (command["type"] == "register") { // todo check why return .
+                // if(command["line"]=="458") assert(false);
+                // else if (command["type"] == "") {
+            } else if (command["type"] == "register") {  // todo check why return .
                 return;
             } else {
                 assert(false);
@@ -245,7 +258,8 @@ public:
     }
 
 protected:
-    void SetUp() override{}
-    void TearDown() override{}
-
+    void SetUp() override {
+    }
+    void TearDown() override {
+    }
 };

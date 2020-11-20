@@ -14,8 +14,8 @@ TEST_F(cppwasm_test_mvp, test_1) {
     test_case("../spectest/data");
     test_case("../spectest/elem");
     test_case("../spectest/endianness");
-    // test_case("../spectest/exports");
-    // test_case("../spectest/f32");
+    // todo // test_case("../spectest/exports");
+    test_case("../spectest/f32");
     // test_case("../spectest/f32_bitwise");
     // test_case("../spectest/f32_cmp");
     // test_case("../spectest/f64");

@@ -40,10 +40,20 @@ public:
     byte_vec data;
 };
 
-// static byte TYPE_i32 = 0x7f;
-// static byte TYPE_i64 = 0x7e;
-// static byte TYPE_f32 = 0x7d;
-// static byte TYPE_f64 = 0x7c;
+static const byte TYPE_i32 = 0x7f;
+static const byte TYPE_i64 = 0x7e;
+static const byte TYPE_f32 = 0x7d;
+static const byte TYPE_f64 = 0x7c;
+
+#define f32_nan_canonical 0x7fc00000
+#define f64_nan_canonical 0x7ff8000000000000
+
+#define f32_positive_zero 0x00000000
+#define f32_negative_zero 0x80000000
+
+#define f64_positive_zero 0x0000000000000000
+#define f64_negative_zero 0x8000000000000000
+
 
 // IMPORTANT
 #define CUSTOM_SECTION_INDEX 0x00
