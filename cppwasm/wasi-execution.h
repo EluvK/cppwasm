@@ -59,6 +59,9 @@ public:
     byte_vec raw() {
         return raw_data;
     }
+    byte_vec & raw_ref(){
+        return raw_data;
+    }
 
     byte type() {
         return _type;
@@ -2154,18 +2157,18 @@ public:
     static void f32_abs(Configuration * config, Instruction * i) {
         xdbg("instruction: f32_abs");
         auto a = config->stack.pop().GetRef<Value>();
-        a.raw()[3] = a.raw()[3] & 0x7f;
+        a.raw_ref()[3] = a.raw()[3] & 0x7f;
         config->stack.append(a);
     }
     static void f32_neg(Configuration * config, Instruction * i) {
         xdbg("instruction: f32_neg");
         auto a = config->stack.pop().GetRef<Value>();
-        if (a.raw()[3] & 0x80 == 0) {
-            // pos:
-            a.raw()[3] = a.raw()[3] | 0x80;
-        } else {
+        if (a.raw()[3] & 0x80) {
             // neg:
-            a.raw()[3] = a.raw()[3] & 0x7f;
+            a.raw_ref()[3] = a.raw()[3] & 0x7f;
+        } else {
+            // pos:
+            a.raw_ref()[3] = a.raw()[3] | 0x80;
         }
         config->stack.append(a);
     }
@@ -2248,7 +2251,7 @@ public:
         auto a = config->stack.pop().GetRef<Value>().to_f32();
         xdbg("instruction: f32_max %f %f %f", a, b, std::max(b, a));
         if (a == 0.0 && b == 0.0 && !(std::signbit(a) && std::signbit(b))) {
-            xdbg("instruction: f32_max negativezero");
+            xdbg("instruction: f32_max positive_zero");
             config->stack.append(Value::from_f32_u32(f32_positive_zero));
         } else if (isnanf(a) || isnanf(b)) {
             config->stack.append(Value(isnanf(a) ? a : b));
@@ -2266,18 +2269,18 @@ public:
     static void f64_abs(Configuration * config, Instruction * i) {
         xdbg("instruction: f64_abs");
         auto a = config->stack.pop().GetRef<Value>();
-        a.raw()[7] = a.raw()[7] & 0x7f;
+        a.raw_ref()[7] = a.raw()[7] & 0x7f;
         config->stack.append(a);
     }
     static void f64_neg(Configuration * config, Instruction * i) {
         xdbg("instruction: f64_neg");
         auto a = config->stack.pop().GetRef<Value>();
-        if (a.raw()[7] & 0x80 == 0) {
-            // pos:
-            a.raw()[7] = a.raw()[7] | 0x80;
-        } else {
+        if (a.raw()[7] & 0x80) {
             // neg:
-            a.raw()[7] = a.raw()[7] & 0x7f;
+            a.raw_ref()[7] = a.raw()[7] & 0x7f;
+        } else {
+            // pos:
+            a.raw_ref()[7] = a.raw()[7] | 0x80;
         }
         config->stack.append(a);
     }
@@ -2357,8 +2360,8 @@ public:
         auto a = config->stack.pop().GetRef<Value>().to_f64();
         xdbg("instruction: f64_max %f %f %f", a, b, std::max(a, b));
         if (a == 0.0 && b == 0.0 && !(std::signbit(a) && std::signbit(b))) {
-            xdbg("instruction: f64_max negativezero");
-            config->stack.append(Value::from_f64_u64(f64_negative_zero));
+            xdbg("instruction: f64_max positive_zero");
+            config->stack.append(Value::from_f64_u64(f32_positive_zero));
         } else if (isnanf(a) || isnanf(b)) {
             // todo might need figure out nan. one is nan than min/max result is nan?? strange logic CHECK DOCUMENT!
             config->stack.append(Value(isnanf(a) ? a : b));

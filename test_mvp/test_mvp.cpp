@@ -16,11 +16,11 @@ TEST_F(cppwasm_test_mvp, test_1) {
     test_case("../spectest/endianness");
     // todo // test_case("../spectest/exports");
     test_case("../spectest/f32");
-    // test_case("../spectest/f32_bitwise");
-    // test_case("../spectest/f32_cmp");
-    // test_case("../spectest/f64");
-    // test_case("../spectest/f64_bitwise");
-    // test_case("../spectest/f64_cmp");
+    test_case("../spectest/f32_bitwise");
+    test_case("../spectest/f32_cmp");
+    test_case("../spectest/f64");
+    test_case("../spectest/f64_bitwise");
+    test_case("../spectest/f64_cmp");
     // test_case("../spectest/float_exprs");
     // test_case("../spectest/float_literals");
     // test_case("../spectest/float_memory");

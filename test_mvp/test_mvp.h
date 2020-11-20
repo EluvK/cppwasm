@@ -44,11 +44,11 @@ public:
             assert(a.raw() == b.raw());
         } else if (b.type() == TYPE_f64) {
             assert(a.type() == TYPE_f64);
-            if (isnanf(b.to_f64())) {
+            if (isnan(b.to_f64())) {
                 if (b.to_i64() == f64_nan_canonical) {
-                    assert(a.to_u64() == f64_nan_canonical || a.to_u32() == (f64_nan_canonical | 1 << 62));
+                    assert(a.to_u64() == f64_nan_canonical || a.to_u64() == (f64_nan_canonical | 0x8000000000000000));
                 } else {
-                    assert(isnanf(a.to_f64()));
+                    assert(isnan(a.to_f64()));
                 }
                 return;
             }

@@ -40,6 +40,11 @@ public:
     byte_vec data;
 };
 
+#define XDEBUG_BV(bv)                                                                                                                                                              \
+    for (auto & b : bv)                                                                                                                                                            \
+        std::printf("0x%02x ", b);                                                                                                                                                 \
+    std::printf("\n");
+
 static const byte TYPE_i32 = 0x7f;
 static const byte TYPE_i64 = 0x7e;
 static const byte TYPE_f32 = 0x7d;
