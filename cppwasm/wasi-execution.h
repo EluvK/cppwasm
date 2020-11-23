@@ -8,11 +8,11 @@
 #include <cfenv>
 
 using InputType = Variant<int32_t, int64_t, float, double, std::string>;
-#define TYPE_I32 1
-#define TYPE_I64 2
-#define TYPE_F32 3
-#define TYPE_F64 4
-#define TYPE_STR 5
+#define INPUT_TYPE_I32 1
+#define INPUT_TYPE_I64 2
+#define INPUT_TYPE_F32 3
+#define INPUT_TYPE_F64 4
+#define INPUT_TYPE_STR 5
 
 class Value {
 public:
@@ -79,17 +79,33 @@ public:
         return v;
     }
 
+    static Value newTypeZero(byte type) {
+        assert(type <= TYPE_i32 && type >= TYPE_f64);
+        switch(type){
+            case TYPE_i32:
+                return Value((int32_t)0);
+            case TYPE_i64:
+                return Value((int64_t)0);
+            case TYPE_f32:
+                return Value((float)0);
+            case TYPE_f64:
+                return Value((double)0);
+            default:
+                xerror("cppwasm: unknown type!");
+        }
+    }
+
     static Value newValue(InputType data) {
         switch (data.GetType()) {
-        case TYPE_I32:
+        case INPUT_TYPE_I32:
             return Value(data.GetConstRef<int32_t>());
-        case TYPE_I64:
+        case INPUT_TYPE_I64:
             return Value(data.GetConstRef<int64_t>());
-        case TYPE_F32:
+        case INPUT_TYPE_F32:
             return Value(data.GetConstRef<float>());
-        case TYPE_F64:
+        case INPUT_TYPE_F64:
             return Value(data.GetConstRef<double>());
-        case TYPE_STR:
+        case INPUT_TYPE_STR:
             return Value(data.GetConstRef<std::string>());
         default:
             xerror("cppwasm:unknow input type");
@@ -559,7 +575,7 @@ public:
     static void exec(Configuration * config, Instruction * i) {
         switch (i->opcode) {
         case instruction::unreachable:
-            xerror("cppwasm: not support unreachable");
+            xerror("cppwasm: unreachable");
         case instruction::nop:
             xdbg("instruction: nop  pass");
             break;

@@ -487,12 +487,12 @@ public:
         o.opcode = BinaryIO.read_one();
         o.args = {};
         switch (o.opcode) {
-        case instruction::unreachable:
-            xerror("cppwasm: not support unreachable");
-        case instruction::nop: {
-            xdbg("nop pass!");
-            break;
-        }
+        // case instruction::unreachable:
+        //     xerror("cppwasm: not support unreachable");
+        // case instruction::nop: {
+        //     xdbg("nop pass!");
+        //     break;
+        // }
         case instruction::block:
         case instruction::loop:
         case instruction::if_: {
@@ -603,8 +603,9 @@ public:
             o.args = std::make_shared<args_f64_count>(f64);
             break;
         }
-        // default:
-        //     xdbg("unknow instruction: 0x%02x", o.opcode);
+        default:
+            // xdbg("unknow instruction: 0x%02x", o.opcode);
+            break;
         }
         return o;
     };
@@ -1460,8 +1461,8 @@ public:
                     func.type_index = Function_section.data[index];
                     func.local_list = {};
                     auto & ll = Code_section.data[index].func.local_list;
-                    for (auto i = 0; i < ll.size(); ++i) {
-                        for (auto _local : ll) {
+                    for (auto _local : ll) {
+                        for (auto i = 0; i < _local.n; ++i) {
                             func.local_list.push_back(_local.type);
                         }
                     }
