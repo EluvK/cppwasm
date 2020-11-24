@@ -48,7 +48,7 @@ TEST_F(cppwasm_test_mvp, test_1) {
     // test_case("../spectest/memory_size");
     // test_case("../spectest/memory_trap");
 
-    // test_case("../spectest/names");
+    test_case("../spectest/names");
     // test_case("../spectest/nop");
     // test_case("../spectest/return");
     // test_case("../spectest/select");

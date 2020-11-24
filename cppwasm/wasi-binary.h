@@ -22,7 +22,7 @@
 //     }
 //     byte data;
 // };
-using TypeIndex = byte;
+using TypeIndex = uint64_t;
 static TypeIndex GetTypeIndex(byte_IO & BinaryIO) {
     return TypeIndex{U_decode_reader(BinaryIO)};
 }
@@ -38,7 +38,7 @@ static TypeIndex GetTypeIndex(byte_IO & BinaryIO) {
 //     }
 //     byte data;
 // };
-using FunctionIndex = byte;
+using FunctionIndex = uint64_t;
 static FunctionIndex GetFunctionIndex(byte_IO & BinaryIO) {
     return FunctionIndex{U_decode_reader(BinaryIO)};
 }
@@ -54,7 +54,7 @@ static FunctionIndex GetFunctionIndex(byte_IO & BinaryIO) {
 //     }
 //     byte data;
 // };
-using TableIndex = byte;
+using TableIndex = uint64_t;
 static TableIndex GetTableIndex(byte_IO & BinaryIO) {
     return TableIndex{U_decode_reader(BinaryIO)};
 }
@@ -70,7 +70,7 @@ static TableIndex GetTableIndex(byte_IO & BinaryIO) {
 //     }
 //     byte data;
 // };
-using MemoryIndex = byte;
+using MemoryIndex = uint64_t;
 static MemoryIndex GetMemoryIndex(byte_IO & BinaryIO) {
     return MemoryIndex{U_decode_reader(BinaryIO)};
 }
@@ -84,7 +84,7 @@ static MemoryIndex GetMemoryIndex(byte_IO & BinaryIO) {
 //     }
 //     byte data;
 // };
-using GlobalIndex = byte;
+using GlobalIndex = uint64_t;
 static GlobalIndex GetGlobalIndex(byte_IO & BinaryIO) {
     return GlobalIndex{U_decode_reader(BinaryIO)};
 }
@@ -98,7 +98,7 @@ static GlobalIndex GetGlobalIndex(byte_IO & BinaryIO) {
 //     }
 //     byte data;
 // };
-using LocalIndex = byte;
+using LocalIndex = uint64_t;
 static LocalIndex GetLocalIndex(byte_IO & BinaryIO) {
     return LocalIndex{U_decode_reader(BinaryIO)};
 }
@@ -116,7 +116,7 @@ static LocalIndex GetLocalIndex(byte_IO & BinaryIO) {
 //     byte data;
 // };
 
-using LabelIndex = uint32_t;
+using LabelIndex = uint64_t;
 static LabelIndex GetLabelIndex(byte_IO & BinaryIO) {
     return LabelIndex{U_decode_reader(BinaryIO)};
 }
@@ -1048,7 +1048,7 @@ public:
     }
     std::string name;
     byte type;
-    byte exportdesc;
+    uint64_t exportdesc;
 };
 
 /**
