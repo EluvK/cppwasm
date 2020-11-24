@@ -2626,6 +2626,10 @@ public:
             }
         }
         // todo run start?
+        if (module.start.exit) {
+            xdbg("running start function");
+            invocate(module_instance->function_addr_list[module.start.function_index], {});
+        }
     }
 
     void allocate(Module const & module, std::vector<ExternValue> extern_value_list, std::vector<Value> global_value) {

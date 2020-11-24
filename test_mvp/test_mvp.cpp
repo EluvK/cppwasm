@@ -49,14 +49,15 @@ TEST_F(cppwasm_test_mvp, test_1) {
     // test_case("../spectest/memory_trap");
 
     test_case("../spectest/names");
-    // test_case("../spectest/nop");
-    // test_case("../spectest/return");
-    // test_case("../spectest/select");
+    test_case("../spectest/nop");
+    test_case("../spectest/return");
+    test_case("../spectest/select");
+    // use too many time temp commented/
     // test_case("../spectest/skip-stack-guard-page");
-    // test_case("../spectest/stack");
-    // test_case("../spectest/start");
-    // test_case("../spectest/store");
-    // test_case("../spectest/switch");
+    test_case("../spectest/stack");
+    test_case("../spectest/start");
+    test_case("../spectest/store");
+    test_case("../spectest/switch");
     // test_case("../spectest/table");
     // test_case("../spectest/token");
     // test_case("../spectest/traps");

@@ -173,6 +173,7 @@ public:
 
         std::map<std::string, std::map<std::string, imp_variant>> test_imps{};
         test_imps["spectest"]["print_i32"] = e_func;
+        test_imps["spectest"]["print"] = e_func;
         test_imps["spectest"]["memory"] = _mem_ins;
         test_imps["spectest"]["global_i32"] = _global_ins;
         test_imps["spectest"]["table"] = _table_ins;
@@ -236,8 +237,8 @@ public:
                 continue;
                 // } else if (command["type"] == "register") {
                 //     continue;
-                // } else if (command["type"] == "assert_uninstantiable") {
-                //     continue;
+            } else if (command["type"] == "assert_uninstantiable") {
+                continue;
             } else if (command["type"] == "action") {
                 if (command["action"]["type"] == "invoke") {
                     std::string function_name = command["action"]["field"];
