@@ -1940,6 +1940,8 @@ public:
         auto a = config->stack.pop().GetRef<Value>().to_i32();
         if (b == 0)
             xerror("cppwasm: integer divide by zero");
+        if (b == -1 && a == -(1 << 31))
+            xerror("cppwasm: integer overflow");
         auto c = Value(a / b);
         config->stack.append(c);
     }
@@ -2086,6 +2088,8 @@ public:
         auto a = config->stack.pop().GetRef<Value>().to_i64();
         if (b == 0)
             xerror("cppwasm: integer divide by zero");
+        if (b == -1 && a == (int64_t)1 << 63)
+            xerror("cppwasm: integer overflow");
         auto c = Value(a / b);
         config->stack.append(c);
     }

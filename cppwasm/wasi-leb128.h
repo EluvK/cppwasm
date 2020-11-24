@@ -58,7 +58,7 @@ static int64_t I_decode(byte_vec const & bv) {
         last_byte = b;
     }
     if (last_byte & 0x40) {
-        res |= -(1 << offset);
+        res |= -((int64_t)1 << std::min(offset, 63));
     }
 
     return res;

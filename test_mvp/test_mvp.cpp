@@ -29,10 +29,10 @@ TEST_F(cppwasm_test_mvp, test_1) {
     test_case("../spectest/func_ptrs");
     test_case("../spectest/global");
     test_case("../spectest/globals");
-    // test_case("../spectest/imports");
-    // test_case("../spectest/inline-module");
-    // test_case("../spectest/int_exprs");
-    // test_case("../spectest/int_literals");
+    test_case("../spectest/imports");
+    test_case("../spectest/inline-module");
+    test_case("../spectest/int_exprs");
+    test_case("../spectest/int_literals");
     // test_case("../spectest/labels");
     // test_case("../spectest/left-to-right");
     // test_case("../spectest/linking");
