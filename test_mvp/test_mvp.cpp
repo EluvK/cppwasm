@@ -33,18 +33,21 @@ TEST_F(cppwasm_test_mvp, test_1) {
     test_case("../spectest/inline-module");
     test_case("../spectest/int_exprs");
     test_case("../spectest/int_literals");
-    // test_case("../spectest/labels");
-    // test_case("../spectest/left-to-right");
-    // test_case("../spectest/linking");
-    // test_case("../spectest/load");
-    // test_case("../spectest/local_get");
-    // test_case("../spectest/local_set");
-    // test_case("../spectest/local_tee");
+    test_case("../spectest/labels");
+    test_case("../spectest/left-to-right");
+    test_case("../spectest/linking");
+    test_case("../spectest/load");
+    test_case("../spectest/local_get");
+    test_case("../spectest/local_set");
+    test_case("../spectest/local_tee");
+
+    // use too many time temp commented/
     // test_case("../spectest/memory");
     // test_case("../spectest/memory_grow");
     // test_case("../spectest/memory_redundancy");
     // test_case("../spectest/memory_size");
     // test_case("../spectest/memory_trap");
+
     // test_case("../spectest/names");
     // test_case("../spectest/nop");
     // test_case("../spectest/return");
