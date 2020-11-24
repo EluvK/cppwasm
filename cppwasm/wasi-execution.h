@@ -1597,16 +1597,24 @@ public:
     static void current_memory(Configuration * config, Instruction * i) {
         auto memory_addr = config->frame.module->memory_addr_list[0];
         auto const & memory = config->store->memory_list[memory_addr];
-        config->stack.append(Value{memory.size});
+        int32_t size = memory.size;
+        config->stack.append(Value{size});
+        xdbg("instruction: current_memory %d", size);
     }
 
     static void grow_memory(Configuration * config, Instruction * i) {
         auto memory_addr = config->frame.module->memory_addr_list[0];
         auto & memory = config->store->memory_list[memory_addr];
         auto r = config->stack.pop().GetRef<Value>().to_i32();
-        // todo add memory grow exception. might fail.
-        memory.grow(r);
-        config->stack.append(Value{memory.size});
+        int32_t size = memory.size;
+        xdbg("instruction: grow_memory %d->%d", size, size + r);
+        try {
+            memory.grow(r);
+            config->stack.append(Value{size});
+
+        } catch (...) {
+            config->stack.append(Value{(int32_t)-1});
+        }
     }
 
     static void i32_const(Configuration * config, Instruction * i) {
