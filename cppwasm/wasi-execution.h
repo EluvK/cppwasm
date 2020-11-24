@@ -1348,9 +1348,7 @@ public:
         ASSERT(v.GetType() == STACK_UNIT_VALUE_TYPE, "non value type to be set local");
         auto & locallist = config->frame.local_list;
         if (locallist.size() <= ptr->data) {
-            auto new_size = std::max(locallist.size(), (size_t)1);
-            while (new_size <= ptr->data)
-                new_size <<= 1;
+            auto new_size = ptr->data + 1;
             locallist.resize(new_size);
         }
         locallist[ptr->data] = v.GetRef<Value>();
@@ -2593,11 +2591,8 @@ public:
             auto offset = r.to_i64();
             auto table_addr = module_instance->table_addr_list[_element.table_index];
             auto & table_instance = store->table_list[table_addr];
-            // todo may make it RESIZE define.
             if (table_instance.element_list.size() <= offset + _element.init.size()) {
-                auto new_size = std::max(table_instance.element_list.size(), (size_t)1);
-                while (new_size <= _element.init.size() + offset)
-                    new_size <<= 1;
+                auto new_size = offset + _element.init.size();
                 table_instance.element_list.resize(new_size);
             }
             for (auto index = 0; index < _element.init.size(); ++index) {

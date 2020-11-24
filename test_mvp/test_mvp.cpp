@@ -25,8 +25,8 @@ TEST_F(cppwasm_test_mvp, test_1) {
     test_case("../spectest/float_literals");
     test_case("../spectest/float_memory");
     test_case("../spectest/float_misc");
-    // test_case("../spectest/forward");
-    // test_case("../spectest/func_ptrs");
+    test_case("../spectest/forward");
+    test_case("../spectest/func_ptrs");
     // test_case("../spectest/global");
     // test_case("../spectest/globals");
     // test_case("../spectest/imports");
