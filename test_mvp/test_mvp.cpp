@@ -58,16 +58,16 @@ TEST_F(cppwasm_test_mvp, test_1) {
     test_case("../spectest/start");
     test_case("../spectest/store");
     test_case("../spectest/switch");
-    // test_case("../spectest/table");
-    // test_case("../spectest/token");
+    test_case("../spectest/table");
+    test_case("../spectest/token");
     test_case("../spectest/traps");
-    // test_case("../spectest/type");
-    // test_case("../spectest/typecheck");
-    // test_case("../spectest/unreachable");
-    // test_case("../spectest/unreached-invalid");
-    // test_case("../spectest/unwind");
-    // test_case("../spectest/utf8-custom-section-id");
-    // test_case("../spectest/utf8-import-field");
-    // test_case("../spectest/utf8-import-module");
-    // test_case("../spectest/utf8-invalid-encoding");
+    test_case("../spectest/type");
+    test_case("../spectest/typecheck");
+    test_case("../spectest/unreachable");
+    test_case("../spectest/unreached-invalid");
+    test_case("../spectest/unwind");
+    test_case("../spectest/utf8-custom-section-id");
+    test_case("../spectest/utf8-import-field");
+    test_case("../spectest/utf8-import-module");
+    test_case("../spectest/utf8-invalid-encoding");
 }
