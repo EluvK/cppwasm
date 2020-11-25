@@ -42,18 +42,18 @@ TEST_F(cppwasm_test_mvp, test_1) {
     test_case("../spectest/local_tee");
 
     // use too many time temp commented/
-    // test_case("../spectest/memory");
-    // test_case("../spectest/memory_grow");
-    // test_case("../spectest/memory_redundancy");
-    // test_case("../spectest/memory_size");
-    // test_case("../spectest/memory_trap");
+    test_case("../spectest/memory");
+    test_case("../spectest/memory_grow");
+    test_case("../spectest/memory_redundancy");
+    test_case("../spectest/memory_size");
+    test_case("../spectest/memory_trap");
 
     test_case("../spectest/names");
     test_case("../spectest/nop");
     test_case("../spectest/return");
     test_case("../spectest/select");
     // use too many time temp commented/
-    // test_case("../spectest/skip-stack-guard-page");
+    test_case("../spectest/skip-stack-guard-page");
     test_case("../spectest/stack");
     test_case("../spectest/start");
     test_case("../spectest/store");
