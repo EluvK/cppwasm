@@ -59,7 +59,7 @@ public:
     byte_vec raw() {
         return raw_data;
     }
-    byte_vec & raw_ref(){
+    byte_vec & raw_ref() {
         return raw_data;
     }
 
@@ -81,17 +81,17 @@ public:
 
     static Value newTypeZero(byte type) {
         assert(type <= TYPE_i32 && type >= TYPE_f64);
-        switch(type){
-            case TYPE_i32:
-                return Value((int32_t)0);
-            case TYPE_i64:
-                return Value((int64_t)0);
-            case TYPE_f32:
-                return Value((float)0);
-            case TYPE_f64:
-                return Value((double)0);
-            default:
-                xerror("cppwasm: unknown type!");
+        switch (type) {
+        case TYPE_i32:
+            return Value((int32_t)0);
+        case TYPE_i64:
+            return Value((int64_t)0);
+        case TYPE_f32:
+            return Value((float)0);
+        case TYPE_f64:
+            return Value((double)0);
+        default:
+            xerror("cppwasm: unknown type!");
         }
     }
 
@@ -2411,24 +2411,48 @@ public:
     static void i32_trunc_sf32(Configuration * config, Instruction * i) {
         xdbg("instruction: i32_trunc_sf32");
         auto a = config->stack.pop().GetRef<Value>().to_f32();
+        if (a > ((int64_t)1 << 31) - 1 || a < -((int64_t)1 << 31)) {
+            xerror("cppwasm: integer overflow");
+        }
+        if (isnanf(a)) {
+            xerror("cppwasm: invalid conversion to integer");
+        }
         auto r = static_cast<int32_t>(a);
         config->stack.append(Value(r));
     }
     static void i32_trunc_uf32(Configuration * config, Instruction * i) {
         xdbg("instruction: i32_trunc_uf32");
         auto a = config->stack.pop().GetRef<Value>().to_f32();
+        if (a > ((int64_t)1 << 32) - 1 || a <= -1) {
+            xerror("cppwasm: integer overflow");
+        }
+        if (isnanf(a)) {
+            xerror("cppwasm: invalid conversion to integer");
+        }
         auto r = static_cast<uint32_t>(a);
         config->stack.append(Value(r));
     }
     static void i32_trunc_sf64(Configuration * config, Instruction * i) {
         xdbg("instruction: i32_trunc_sf64");
         auto a = config->stack.pop().GetRef<Value>().to_f64();
+        if (a > ((int64_t)1 << 31) - 1 || a < -((int64_t)1 << 31)) {
+            xerror("cppwasm: integer overflow");
+        }
+        if (isnan(a)) {
+            xerror("cppwasm: invalid conversion to integer");
+        }
         auto r = static_cast<int32_t>(a);
         config->stack.append(Value(r));
     }
     static void i32_trunc_uf64(Configuration * config, Instruction * i) {
         xdbg("instruction: i32_trunc_uf64");
         auto a = config->stack.pop().GetRef<Value>().to_f64();
+        if (a > ((int64_t)1 << 32) - 1 || a <= -1) {
+            xerror("cppwasm: integer overflow");
+        }
+        if (isnan(a)) {
+            xerror("cppwasm: invalid conversion to integer");
+        }
         auto r = static_cast<uint32_t>(a);
         config->stack.append(Value(r));
     }
@@ -2445,24 +2469,48 @@ public:
     static void i64_trunc_sf32(Configuration * config, Instruction * i) {
         xdbg("instruction: i64_trunc_sf32");
         auto a = config->stack.pop().GetRef<Value>().to_f32();
+        if (a > ((int64_t)1 << 63) - 1 || a < -((int64_t)1 << 63)) {
+            xerror("cppwasm: integer overflow");
+        }
+        if (isnanf(a)) {
+            xerror("cppwasm: invalid conversion to integer");
+        }
         auto r = static_cast<int64_t>(a);
         config->stack.append(Value(r));
     }
     static void i64_trunc_uf32(Configuration * config, Instruction * i) {
         xdbg("instruction: i64_trunc_uf32");
         auto a = config->stack.pop().GetRef<Value>().to_f32();
+        if (a > 0x7ffffffffffffffff || a <= -1) {
+            xerror("cppwasm: integer overflow");
+        }
+        if (isnanf(a)) {
+            xerror("cppwasm: invalid conversion to integer");
+        }
         auto r = static_cast<uint64_t>(a);
         config->stack.append(Value(r));
     }
     static void i64_trunc_sf64(Configuration * config, Instruction * i) {
         xdbg("instruction: i64_trunc_sf64");
         auto a = config->stack.pop().GetRef<Value>().to_f64();
+        if (a > ((int64_t)1 << 63) - 1 || a < -((int64_t)1 << 63)) {
+            xerror("cppwasm: integer overflow");
+        }
+        if (isnan(a)) {
+            xerror("cppwasm: invalid conversion to integer");
+        }
         auto r = static_cast<int64_t>(a);
         config->stack.append(Value(r));
     }
     static void i64_trunc_uf64(Configuration * config, Instruction * i) {
         xdbg("instruction: i64_trunc_uf64");
         auto a = config->stack.pop().GetRef<Value>().to_f64();
+        if (a > 0x7ffffffffffffffff || a <= -1) {
+            xerror("cppwasm: integer overflow");
+        }
+        if (isnan(a)) {
+            xerror("cppwasm: invalid conversion to integer");
+        }
         auto r = static_cast<uint64_t>(a);
         config->stack.append(Value(r));
     }

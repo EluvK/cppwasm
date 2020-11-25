@@ -60,7 +60,7 @@ TEST_F(cppwasm_test_mvp, test_1) {
     test_case("../spectest/switch");
     // test_case("../spectest/table");
     // test_case("../spectest/token");
-    // test_case("../spectest/traps");
+    test_case("../spectest/traps");
     // test_case("../spectest/type");
     // test_case("../spectest/typecheck");
     // test_case("../spectest/unreachable");
