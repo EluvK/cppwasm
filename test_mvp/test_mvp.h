@@ -57,23 +57,23 @@ public:
     }
 
     void assert_result(Result & expect_res, Result & real_res) {
-        std::printf("exp: ");
-        if (expect_res.data.empty()) {
-            std::printf(" empty expect_res");
-        } else {
-            for (auto index = 0; index < expect_res.data[0].raw().size(); index++) {
-                std::printf("0x%02x  ", expect_res.data[0].raw()[index]);
-            }
-        }
-        std::printf("\n------\nact: ");
-        if (real_res.data.empty()) {
-            std::printf(" empty real_res");
-        } else {
-            for (auto index = 0; index < real_res.data[0].raw().size(); index++) {
-                std::printf("0x%02x  ", real_res.data[0].raw()[index]);
-            }
-        }
-        std::printf("\n");
+        // std::printf("exp: ");
+        // if (expect_res.data.empty()) {
+        //     std::printf(" empty expect_res");
+        // } else {
+        //     for (auto index = 0; index < expect_res.data[0].raw().size(); index++) {
+        //         std::printf("0x%02x  ", expect_res.data[0].raw()[index]);
+        //     }
+        // }
+        // std::printf("\n------\nact: ");
+        // if (real_res.data.empty()) {
+        //     std::printf(" empty real_res");
+        // } else {
+        //     for (auto index = 0; index < real_res.data[0].raw().size(); index++) {
+        //         std::printf("0x%02x  ", real_res.data[0].raw()[index]);
+        //     }
+        // }
+        // std::printf("\n");
         assert(expect_res.data.size() == real_res.data.size());
         for (auto index = 0; index < expect_res.data.size(); index++) {
             assert_value(real_res.data[index], expect_res.data[index]);
@@ -90,9 +90,9 @@ public:
 
     std::vector<Value> parse_val(nlohmann::json const & json) {
         std::vector<Value> res;
-        std::cout << json << std::endl;
+        // std::cout << json << std::endl;
         for (auto & p : json) {
-            std::cout << "each pair: " << p << std::endl;
+            // std::cout << "each pair: " << p << std::endl;
             std::string str = p["value"];
             if (p["type"] == "i32") {
                 int32_t val = atoi(str.c_str());

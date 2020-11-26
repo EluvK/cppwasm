@@ -8,7 +8,7 @@
 #define xdbg(...)                                                                                                                                                                  \
     fprintf(stderr, __VA_ARGS__);                                                                                                                                                  \
     printf("\n");
-// #define xdbg(...)
+#define xdbg(...)
 #define xerror(...)                                                                                                                                                                \
     {                                                                                                                                                                              \
         fprintf(stderr, "Error(%s:%d): ", __FILE__, __LINE__);                                                                                                                     \
@@ -16,6 +16,7 @@
         printf("\n");                                                                                                                                                              \
         throw(__VA_ARGS__);                                                                                                                                                        \
     }
+// #define xerror(...) throw(__VA_ARGS__);
 // exit(1);
 #define xwarn(...) fprintf(stderr, __VA_ARGS__);
 

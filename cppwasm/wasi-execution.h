@@ -1292,7 +1292,7 @@ public:
         xdbg("instruction: call_indirect");
         auto ptr = dynamic_cast<args_call_indirect *>(i->args.get());
         if (ptr->data.second != 0x00) {
-            xerror("cppwasm: zero byte malformed in call_indirect")
+            xerror("cppwasm: zero byte malformed in call_indirect");
         }
         auto const & ta = config->frame.module->table_addr_list[0];
         auto const & tab = config->store->table_list[ta];
@@ -1460,11 +1460,11 @@ public:
         }
 
         // debug:
-        std::printf("------mem load: ");
-        for (auto index = 0; index < res.size(); ++index) {
-            std::printf("0x%02x ", res[index]);
-        }
-        std::printf("\n");
+        // std::printf("------mem load: ");
+        // for (auto index = 0; index < res.size(); ++index) {
+        //     std::printf("0x%02x ", res[index]);
+        // }
+        // std::printf("\n");
 
         return res;
     }
@@ -1550,11 +1550,11 @@ public:
         }
 
         // debug
-        printf("------mem store:  ");
-        for (auto index = 0; index < size; ++index) {
-            printf("0x%02x ", mem[index + addr]);
-        }
-        printf("\n");
+        // printf("------mem store:  ");
+        // for (auto index = 0; index < size; ++index) {
+        //     printf("0x%02x ", mem[index + addr]);
+        // }
+        // printf("\n");
     }
 
     static void i32_store(Configuration * config, Instruction * i) {

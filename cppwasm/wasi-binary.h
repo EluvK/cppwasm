@@ -1231,10 +1231,10 @@ public:
         byte_IO code_bytes{BinaryIO.read(res.size)};
         // ! for debug
         // printf("size: 0x%02x ", res.size);
-        for (auto _b : code_bytes.data) {
-            printf("0x%02x ", _b);
-        }
-        printf("\n");
+        // for (auto _b : code_bytes.data) {
+        //     printf("0x%02x ", _b);
+        // }
+        // printf("\n");
         res.func = Func::GetFunc(code_bytes);
         ASSERT(code_bytes.empty(), "should be empty to be get all code.");
         return res;
