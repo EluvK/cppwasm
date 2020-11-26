@@ -1338,7 +1338,6 @@ public:
             locallist.resize(new_size);
         }
         locallist[ptr->data] = v.GetRef<Value>();
-        // config->frame.local_list.insert(config->frame.local_list.begin() + ptr->data, v.GetRef<Value>());
     }
 
     static void tee_local(Configuration * config, Instruction * i) {
@@ -1352,7 +1351,6 @@ public:
             locallist.resize(new_size);
         }
         locallist[ptr->data] = v.GetRef<Value>();
-        // config->frame.local_list.insert(config->frame.local_list.begin() + ptr->data, v.GetRef<Value>());
     }
 
     static void get_global(Configuration * config, Instruction * i) {
@@ -1450,7 +1448,6 @@ public:
         int64_t addr = config->stack.pop().GetRef<Value>().to_i32() + offset;
         xdbg("instruction: mem_load  addr:%" PRId64 " offset:%" PRIu64 " memory data size : %zu", addr, offset, memory.data.size());
         if (addr < 0 || addr + size > memory.data.size()) {
-            // todo  make it exception.
             xerror("cppwasm: out of bounds memory access");
         }
         auto & mem = memory.data;
@@ -1637,7 +1634,6 @@ public:
         xdbg("instruction: f64_const %lf", config->stack.back().GetRef<Value>().to_f64())
     }
 
-    // i32:
     static void i32_eqz(Configuration * config, Instruction * i) {
         xdbg("instruction: i32_eqz");
         int32_t res = (config->stack.pop().GetRef<Value>().to_i32() == 0) ? 1 : 0;
@@ -1714,7 +1710,6 @@ public:
         config->stack.append(Value(res));
     }
 
-    // i64:
     static void i64_eqz(Configuration * config, Instruction * i) {
         xdbg("instruction: i64_eqz");
         int32_t res = (config->stack.pop().GetRef<Value>().to_i64() == 0) ? 1 : 0;
@@ -1791,7 +1786,6 @@ public:
         config->stack.append(Value(res));
     }
 
-    // f32&f64:
     static void f32_eq(Configuration * config, Instruction * i) {
         xdbg("instruction: f32_eq");
         auto b = config->stack.pop().GetRef<Value>().to_f32();
@@ -2673,7 +2667,6 @@ public:
                 memory_instance.data[offset++] = b;
             }
         }
-        // todo run start?
         if (module.start.exit) {
             xdbg("running start function");
             invocate(module_instance->function_addr_list[module.start.function_index], {});
@@ -2726,7 +2719,6 @@ public:
             ExternValue extern_value{};
             switch (_export.type) {
             case EXPORT_TYPE_FUNC: {
-                // FunctionIndex
                 xdbg(" GET export_func name:%s  type:%d  index:%d", _export.name.c_str(), _export.type, _export.exportdesc);
                 auto addr = module_instance->function_addr_list[_export.exportdesc];
                 extern_value = std::make_pair(0, addr);

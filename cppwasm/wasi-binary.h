@@ -3,118 +3,43 @@
 #include "base/wasi-define.h"
 #include "wasi-leb128.h"
 
-#include <fstream>
 #include <cinttypes>
+#include <fstream>
 /**
  * ======================================================================================================================
  * Binary Format Index
  * ======================================================================================================================
  */
 
-// class TypeIndex {
-// public:
-//     TypeIndex() {
-//     }
-//     TypeIndex(byte b) : data{b} {
-//     }
-//     static TypeIndex GetTypeIndex(byte_IO & BinaryIO) {
-//         return TypeIndex{U_decode_reader(BinaryIO)};
-//     }
-//     byte data;
-// };
 using TypeIndex = uint64_t;
 static TypeIndex GetTypeIndex(byte_IO & BinaryIO) {
     return TypeIndex{U_decode_reader(BinaryIO)};
 }
 
-// class FunctionIndex {
-// public:
-//     FunctionIndex() {
-//     }
-//     FunctionIndex(byte b) : data{b} {
-//     }
-//     static FunctionIndex GetFunctionIndex(byte_IO & BinaryIO) {
-//         return FunctionIndex{U_decode_reader(BinaryIO)};
-//     }
-//     byte data;
-// };
 using FunctionIndex = uint64_t;
 static FunctionIndex GetFunctionIndex(byte_IO & BinaryIO) {
     return FunctionIndex{U_decode_reader(BinaryIO)};
 }
 
-// class TableIndex {
-// public:
-//     TableIndex() {
-//     }
-//     TableIndex(byte b) : data{b} {
-//     }
-//     static TableIndex GetTableIndex(byte_IO & BinaryIO) {
-//         return TableIndex{U_decode_reader(BinaryIO)};
-//     }
-//     byte data;
-// };
 using TableIndex = uint64_t;
 static TableIndex GetTableIndex(byte_IO & BinaryIO) {
     return TableIndex{U_decode_reader(BinaryIO)};
 }
 
-// class MemoryIndex {
-// public:
-//     MemoryIndex() {
-//     }
-//     MemoryIndex(byte b) : data{b} {
-//     }
-//     static MemoryIndex GetMemoryIndex(byte_IO & BinaryIO) {
-//         return MemoryIndex{U_decode_reader(BinaryIO)};
-//     }
-//     byte data;
-// };
 using MemoryIndex = uint64_t;
 static MemoryIndex GetMemoryIndex(byte_IO & BinaryIO) {
     return MemoryIndex{U_decode_reader(BinaryIO)};
 }
 
-// class GlobalIndex {
-// public:
-//     GlobalIndex(byte b) : data{b} {
-//     }
-//     static GlobalIndex GetGlobalIndex(byte_IO & BinaryIO) {
-//         return GlobalIndex{U_decode_reader(BinaryIO)};
-//     }
-//     byte data;
-// };
 using GlobalIndex = uint64_t;
 static GlobalIndex GetGlobalIndex(byte_IO & BinaryIO) {
     return GlobalIndex{U_decode_reader(BinaryIO)};
 }
 
-// class LocalIndex {
-// public:
-//     LocalIndex(byte b) : data{b} {
-//     }
-//     static LocalIndex GetLocalIndex(byte_IO & BinaryIO) {
-//         return LocalIndex{U_decode_reader(BinaryIO)};
-//     }
-//     byte data;
-// };
 using LocalIndex = uint64_t;
 static LocalIndex GetLocalIndex(byte_IO & BinaryIO) {
     return LocalIndex{U_decode_reader(BinaryIO)};
 }
-
-// (delete)  may remove class? using LabelIndex = byte? other index?
-// class LabelIndex {
-// public:
-//     LabelIndex() {
-//     }
-//     LabelIndex(byte b) : data{b} {
-//     }
-//     static LabelIndex GetLabelIndex(byte_IO & BinaryIO) {
-//         return LabelIndex{U_decode_reader(BinaryIO)};
-//     }
-//     byte data;
-// };
 
 using LabelIndex = uint64_t;
 static LabelIndex GetLabelIndex(byte_IO & BinaryIO) {
@@ -137,28 +62,9 @@ static LabelIndex GetLabelIndex(byte_IO & BinaryIO) {
  * }
  */
 using ValueType = byte;
-static ValueType GetValueType(byte_IO & BinaryIO){
+static ValueType GetValueType(byte_IO & BinaryIO) {
     return ValueType{BinaryIO.read_one()};
 }
-// class ValueType {
-// public:
-//     ValueType() {
-//     }
-//     ValueType(byte b) : data{b} {
-//     }
-
-//     static ValueType GetValueType(byte_IO & BinaryIO) {
-//         return ValueType(BinaryIO.read_one());
-//     }
-//     bool operator==(ValueType const & other) const noexcept {
-//         return data == other.data;
-//     }
-//     bool operator!=(ValueType const & other) const noexcept {
-//         return !(*this == other);
-//     }
-
-//     byte data;
-// };
 
 /**
  * @brief Result types classify the result of executing instructions or blocks, which is a sequence of values written with brackets.
@@ -254,20 +160,9 @@ public:
  *
  */
 using ElementType = byte;
-static ElementType GetElementType(byte_IO & BinaryIO){
+static ElementType GetElementType(byte_IO & BinaryIO) {
     return ElementType{BinaryIO.read_one()};
 }
-// class ElementType {
-// public:
-//     ElementType() {
-//     }
-//     ElementType(byte b) : data{b} {
-//     }
-//     static ElementType GetElementType(byte_IO & BinaryIO) {
-//         return ElementType{BinaryIO.read_one()};
-//     }
-//     byte data;
-// };
 
 /**
  * @brief Table types classify tables over elements of element types within a size range.
@@ -299,20 +194,9 @@ public:
  * @brief # Mut const | var
  */
 using Mut = byte;
-static Mut GetMut(byte_IO & BinaryIO){
+static Mut GetMut(byte_IO & BinaryIO) {
     return Mut{BinaryIO.read_one()};
 }
-// class Mut {
-// public:
-//     Mut() {
-//     }
-//     Mut(byte b) : data{b} {
-//     }
-//     static Mut GetMut(byte_IO & BinaryIO) {
-//         return Mut{BinaryIO.read_one()};
-//     }
-//     byte data;
-// };
 
 class GlobalType {
 public:
@@ -344,24 +228,9 @@ public:
  *             | x: s33
  */
 using BlockType = byte;
-static BlockType GetBlockType(byte_IO & BinaryIO){
+static BlockType GetBlockType(byte_IO & BinaryIO) {
     return BlockType{BinaryIO.read_one()};
 }
-// class BlockType {
-// public:
-//     BlockType() {
-//     }
-
-//     static BlockType GetBlockType(byte_IO & BinaryIO) {
-//         BlockType res{};
-//         res.data = BinaryIO.read_one();
-//         return res;
-//     }
-//     byte data;
-// };
-
-//----------------------
-// mywork
 
 // base for ptr.
 class instruction_args_base {
@@ -468,7 +337,6 @@ public:
     std::pair<uint64_t, uint64_t> data;
 };
 using args_ptr = std::shared_ptr<instruction_args_base>;
-//--------------
 
 /**
  * @brief Instructions are encoded by opcodes. Each opcode is represented by a single byte, and is followed by the
@@ -576,12 +444,12 @@ public:
         }
 
         case instruction::current_memory:
-        case instruction::grow_memory:{
+        case instruction::grow_memory: {
             byte n = BinaryIO.read_one();
             o.args = std::make_shared<args_memory>(n);
             break;
         }
-        case instruction::i32_const:{
+        case instruction::i32_const: {
             auto i32 = I_decode_reader(BinaryIO);
             o.args = std::make_shared<args_i32_count>(i32);
             break;
@@ -592,13 +460,13 @@ public:
             break;
         }
 
-        case instruction::f32_const:{
+        case instruction::f32_const: {
             auto f32 = F32_decode_reader(BinaryIO);
             o.args = std::make_shared<args_f32_count>(f32);
             break;
         }
 
-        case instruction::f64_const:{
+        case instruction::f64_const: {
             auto f64 = F64_decode_reader(BinaryIO);
             o.args = std::make_shared<args_f64_count>(f64);
             break;
@@ -1069,7 +937,7 @@ public:
     static ExportSection GetExportSection(byte_IO & BinaryIO) {
         ExportSection res{};
         uint64_t size = U_decode_reader(BinaryIO);
-        xdbg("export_section size",size);
+        xdbg("export_section size", size);
         for (auto index = 0; index < size; ++index) {
             res.data.push_back(Export::GetExport(BinaryIO));
         }
@@ -1336,11 +1204,6 @@ class Function {
 public:
     Function() {
     }
-    // static Function GetFunction(byte_IO & BinaryIO){
-    //     Function res{};
-
-    //     return res;
-    // }
 
     TypeIndex type_index;
     std::vector<ValueType> local_list;
@@ -1351,7 +1214,7 @@ public:
  * @brief The binary encoding of modules is organized into sections. Most sections correspond to one component of a module
  * record, except that function definitions are split into two sections, separating their type declarations in the
  * function section from their bodies in the code section.
- * 
+ *
  */
 class Module {
 public:

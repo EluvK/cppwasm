@@ -4,8 +4,8 @@
 #include <iostream>
 #include <map>
 #include <memory>
-#include <vector>
 #include <string>
+#include <vector>
 
 using byte = uint8_t;
 using byte_vec = std::vector<byte>;
@@ -58,7 +58,6 @@ static const byte TYPE_f64 = 0x7c;
 
 #define f64_positive_zero 0x0000000000000000
 #define f64_negative_zero 0x8000000000000000
-
 
 // IMPORTANT
 #define CUSTOM_SECTION_INDEX 0x00
@@ -253,176 +252,3 @@ static const byte f32_reinterpret_i32 = 0xbe;
 static const byte f64_reinterpret_i64 = 0xbf;
 
 }  // namespace instruction
-
-// case instruction::unreachable:
-// case instruction::nop:
-// case instruction::block:
-// case instruction::loop:
-// case instruction::if_:
-// case instruction::else_:
-// case instruction::end:
-// case instruction::br:
-// case instruction::br_if:
-// case instruction::br_table:
-// case instruction::return_:
-// case instruction::call:
-// case instruction::call_indirect:
-// case instruction::drop:
-// case instruction::select:
-// case instruction::get_local:
-// case instruction::set_local:
-// case instruction::tee_local:
-// case instruction::get_global:
-// case instruction::set_global:
-// case instruction::i32_load:
-// case instruction::i64_load:
-// case instruction::f32_load:
-// case instruction::f64_load:
-// case instruction::i32_load8_s:
-// case instruction::i32_load8_u:
-// case instruction::i32_load16_s:
-// case instruction::i32_load16_u:
-// case instruction::i64_load8_s:
-// case instruction::i64_load8_u:
-// case instruction::i64_load16_s:
-// case instruction::i64_load16_u:
-// case instruction::i64_load32_s:
-// case instruction::i64_load32_u:
-// case instruction::i32_store:
-// case instruction::i64_store:
-// case instruction::f32_store:
-// case instruction::f64_store:
-// case instruction::i32_store8:
-// case instruction::i32_store16:
-// case instruction::i64_store8:
-// case instruction::i64_store16:
-// case instruction::i64_store32:
-// case instruction::current_memory:
-// case instruction::grow_memory:
-// case instruction::i32_const:
-// case instruction::i64_const:
-// case instruction::f32_const:
-// case instruction::f64_const:
-// case instruction::i32_eqz:
-// case instruction::i32_eq:
-// case instruction::i32_ne:
-// case instruction::i32_lts:
-// case instruction::i32_ltu:
-// case instruction::i32_gts:
-// case instruction::i32_gtu:
-// case instruction::i32_les:
-// case instruction::i32_leu:
-// case instruction::i32_ges:
-// case instruction::i32_geu:
-// case instruction::i64_eqz:
-// case instruction::i64_eq:
-// case instruction::i64_ne:
-// case instruction::i64_lts:
-// case instruction::i64_ltu:
-// case instruction::i64_gts:
-// case instruction::i64_gtu:
-// case instruction::i64_les:
-// case instruction::i64_leu:
-// case instruction::i64_ges:
-// case instruction::i64_geu:
-// case instruction::f32_eq:
-// case instruction::f32_ne:
-// case instruction::f32_lt:
-// case instruction::f32_gt:
-// case instruction::f32_le:
-// case instruction::f32_ge:
-// case instruction::f64_eq:
-// case instruction::f64_ne:
-// case instruction::f64_lt:
-// case instruction::f64_gt:
-// case instruction::f64_le:
-// case instruction::f64_ge:
-// case instruction::i32_clz:
-// case instruction::i32_ctz:
-// case instruction::i32_popcnt:
-// case instruction::i32_add:
-// case instruction::i32_sub:
-// case instruction::i32_mul:
-// case instruction::i32_divs:
-// case instruction::i32_divu:
-// case instruction::i32_rems:
-// case instruction::i32_remu:
-// case instruction::i32_and:
-// case instruction::i32_or:
-// case instruction::i32_xor:
-// case instruction::i32_shl:
-// case instruction::i32_shrs:
-// case instruction::i32_shru:
-// case instruction::i32_rotl:
-// case instruction::i32_rotr:
-// case instruction::i64_clz:
-// case instruction::i64_ctz:
-// case instruction::i64_popcnt:
-// case instruction::i64_add:
-// case instruction::i64_sub:
-// case instruction::i64_mul:
-// case instruction::i64_divs:
-// case instruction::i64_divu:
-// case instruction::i64_rems:
-// case instruction::i64_remu:
-// case instruction::i64_and:
-// case instruction::i64_or:
-// case instruction::i64_xor:
-// case instruction::i64_shl:
-// case instruction::i64_shrs:
-// case instruction::i64_shru:
-// case instruction::i64_rotl:
-// case instruction::i64_rotr:
-// case instruction::f32_abs:
-// case instruction::f32_neg:
-// case instruction::f32_ceil:
-// case instruction::f32_floor:
-// case instruction::f32_trunc:
-// case instruction::f32_nearest:
-// case instruction::f32_sqrt:
-// case instruction::f32_add:
-// case instruction::f32_sub:
-// case instruction::f32_mul:
-// case instruction::f32_div:
-// case instruction::f32_min:
-// case instruction::f32_max:
-// case instruction::f32_copysign:
-// case instruction::f64_abs:
-// case instruction::f64_neg:
-// case instruction::f64_ceil:
-// case instruction::f64_floor:
-// case instruction::f64_trunc:
-// case instruction::f64_nearest:
-// case instruction::f64_sqrt:
-// case instruction::f64_add:
-// case instruction::f64_sub:
-// case instruction::f64_mul:
-// case instruction::f64_div:
-// case instruction::f64_min:
-// case instruction::f64_max:
-// case instruction::f64_copysign:
-// case instruction::i32_wrap_i64:
-// case instruction::i32_trunc_sf32:
-// case instruction::i32_trunc_uf32:
-// case instruction::i32_trunc_sf64:
-// case instruction::i32_trunc_uf64:
-// case instruction::i64_extend_si32:
-// case instruction::i64_extend_ui32:
-// case instruction::i64_trunc_sf32:
-// case instruction::i64_trunc_uf32:
-// case instruction::i64_trunc_sf64:
-// case instruction::i64_trunc_uf64:
-// case instruction::f32_convert_si32:
-// case instruction::f32_convert_ui32:
-// case instruction::f32_convert_si64:
-// case instruction::f32_convert_ui64:
-// case instruction::f32_demote_f64:
-// case instruction::f64_convert_si32:
-// case instruction::f64_convert_ui32:
-// case instruction::f64_convert_si64:
-// case instruction::f64_convert_ui64:
-// case instruction::f64_promote_f32:
-// case instruction::i32_reinterpret_f32:
-// case instruction::i64_reinterpret_f64:
-// case instruction::f32_reinterpret_i32:
-// case instruction::f64_reinterpret_i64:

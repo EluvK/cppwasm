@@ -52,15 +52,11 @@ Result Configuration::exec() {
     }
     auto _arity = frame.arity;
     Result res;
-    // xdbg(" exec result: stack len: %d arity: %d", stack.len(), _arity);
     while (_arity--) {
-        // xdbg("  stack len:%d", stack.len());
         auto r = stack.pop();
-        // xdbg("  type:%d",r.GetType());
         switch (r.GetType()) {
         case STACK_UNIT_VALUE_TYPE:
             res.data.push_back(r.GetRef<Value>());
-            // xdbg("Result: %d", r.GetRef<Value>().to_i32());
             break;
         default:
             xerror("cppwasm: error type  %d in stack should all be Value Result ", r.GetType());
@@ -69,6 +65,5 @@ Result Configuration::exec() {
     }
     // todo can also check this pop() == frame.
     ASSERT(stack.pop().GetType() == STACK_UNIT_FRAME_TYPE, "error?");
-    // xdbg("RESULT??");
     return res;
 }
